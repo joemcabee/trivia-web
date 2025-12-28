@@ -34,32 +34,40 @@ public class PresentationController : ControllerBase
         {
             foreach (var category in round.Categories.OrderBy(c => c.Order))
             {
+                var questionNumber = 1;
                 // Add question slides (without answers)
                 foreach (var question in category.Questions.OrderBy(q => q.Order))
                 {
                     slides.Add(new PresentationSlideDto
                     {
                         Type = "question",
+                        RoundName = round.Name,
                         CategoryName = category.Name,
                         QuestionText = question.QuestionText,
                         Answer = null,
                         ImageUrl = question.ImageUrl,
-                        QuestionId = question.Id
+                        QuestionId = question.Id,
+                        QuestionNumber = questionNumber
                     });
+                    questionNumber++;
                 }
 
+                questionNumber = 1;
                 // Add answer slides (with answers)
                 foreach (var question in category.Questions.OrderBy(q => q.Order))
                 {
                     slides.Add(new PresentationSlideDto
                     {
                         Type = "answer",
+                        RoundName = round.Name,
                         CategoryName = category.Name,
                         QuestionText = question.QuestionText,
                         Answer = question.Answer,
                         ImageUrl = question.ImageUrl,
-                        QuestionId = question.Id
+                        QuestionId = question.Id,
+                        QuestionNumber = questionNumber
                     });
+                    questionNumber++;
                 }
             }
         }
@@ -83,10 +91,12 @@ public class PresentationDataDto
 public class PresentationSlideDto
 {
     public string Type { get; set; } = string.Empty; // "question" or "answer"
+    public string RoundName { get; set; } = string.Empty;
     public string CategoryName { get; set; } = string.Empty;
     public string QuestionText { get; set; } = string.Empty;
     public string? Answer { get; set; }
     public string? ImageUrl { get; set; }
     public int QuestionId { get; set; }
+    public int QuestionNumber { get; set; }
 }
 

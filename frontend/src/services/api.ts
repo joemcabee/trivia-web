@@ -55,11 +55,13 @@ export interface EventDetails {
 
 export interface PresentationSlide {
   type: 'question' | 'answer'
+  roundName: string
   categoryName: string
   questionText: string
   answer: string | null
   imageUrl: string | null
   questionId: number
+  questionNumber: number
 }
 
 export interface PresentationData {

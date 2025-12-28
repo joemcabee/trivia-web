@@ -110,7 +110,7 @@ function Presentation() {
           <div className="bg-gray-800 rounded-lg p-8 shadow-2xl min-h-[60vh] flex flex-col">
             <div className="mb-4">
               <div className="text-sm text-gray-400 mb-2">
-                {presentationData.eventName} • {currentSlide.categoryName}
+                {currentSlide.roundName || 'Round'} • {currentSlide.categoryName || 'Category'} • Question {currentSlide.questionNumber || 0}
               </div>
               <div className="text-xs text-gray-500">
                 Slide {currentSlideIndex + 1} of {presentationData.slides.length}
