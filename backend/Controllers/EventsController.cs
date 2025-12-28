@@ -76,6 +76,16 @@ public class EventsController : ControllerBase
         return Ok(roundDto);
     }
 
+    [HttpDelete("rounds/{id}")]
+    public async Task<IActionResult> DeleteRound(int id)
+    {
+        var deleted = await _eventService.DeleteRoundAsync(id);
+        if (!deleted)
+            return NotFound();
+
+        return NoContent();
+    }
+
     [HttpPost("categories")]
     public async Task<ActionResult<CategoryDto>> CreateCategory(CreateCategoryDto createCategoryDto)
     {
@@ -83,11 +93,55 @@ public class EventsController : ControllerBase
         return Ok(categoryDto);
     }
 
+    [HttpDelete("categories/{id}")]
+    public async Task<IActionResult> DeleteCategory(int id)
+    {
+        var deleted = await _eventService.DeleteCategoryAsync(id);
+        if (!deleted)
+            return NotFound();
+
+        return NoContent();
+    }
+
     [HttpPost("questions")]
     public async Task<ActionResult<QuestionDto>> CreateQuestion(CreateQuestionDto createQuestionDto)
     {
         var questionDto = await _eventService.CreateQuestionAsync(createQuestionDto);
         return Ok(questionDto);
+    }
+
+    [HttpPut("questions/{id}")]
+    public async Task<ActionResult<QuestionDto>> UpdateQuestion(int id, UpdateQuestionDto updateQuestionDto)
+    {
+        var questionDto = await _eventService.UpdateQuestionAsync(id, updateQuestionDto);
+        if (questionDto == null)
+            return NotFound();
+
+        return Ok(questionDto);
+    }
+
+    [HttpDelete("questions/{id}")]
+    public async Task<IActionResult> DeleteQuestion(int id)
+    {
+        var deleted = await _eventService.DeleteQuestionAsync(id);
+        if (!deleted)
+            return NotFound();
+
+        return NoContent();
+    }
+
+    [HttpPost("{id}/clone")]
+    public async Task<ActionResult<EventDto>> CloneEvent(int id)
+    {
+        try
+        {
+            var eventDto = await _eventService.CloneEventAsync(id);
+            return Ok(eventDto);
+        }
+        catch (ArgumentException)
+        {
+            return NotFound();
+        }
     }
 }
 

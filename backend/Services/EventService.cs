@@ -146,6 +146,31 @@ public class EventService : IEventService
         };
     }
 
+    public async Task<bool> DeleteRoundAsync(int id)
+    {
+        var round = await _context.Rounds
+            .Include(r => r.Categories)
+                .ThenInclude(c => c.Questions)
+            .FirstOrDefaultAsync(r => r.Id == id);
+        
+        if (round == null)
+            return false;
+
+        // Delete all questions in categories of this round
+        foreach (var category in round.Categories)
+        {
+            _context.Questions.RemoveRange(category.Questions);
+        }
+
+        // Delete all categories in this round
+        _context.Categories.RemoveRange(round.Categories);
+
+        // Delete the round
+        _context.Rounds.Remove(round);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
     public async Task<CategoryDto> CreateCategoryAsync(CreateCategoryDto createCategoryDto)
     {
         var maxOrder = await _context.Categories
@@ -172,6 +197,24 @@ public class EventService : IEventService
             Order = category.Order,
             Questions = new List<QuestionDto>()
         };
+    }
+
+    public async Task<bool> DeleteCategoryAsync(int id)
+    {
+        var category = await _context.Categories
+            .Include(c => c.Questions)
+            .FirstOrDefaultAsync(c => c.Id == id);
+        
+        if (category == null)
+            return false;
+
+        // Delete all questions in this category
+        _context.Questions.RemoveRange(category.Questions);
+
+        // Delete the category
+        _context.Categories.Remove(category);
+        await _context.SaveChangesAsync();
+        return true;
     }
 
     public async Task<QuestionDto> CreateQuestionAsync(CreateQuestionDto createQuestionDto)
@@ -203,6 +246,40 @@ public class EventService : IEventService
             CategoryId = question.CategoryId,
             Order = question.Order
         };
+    }
+
+    public async Task<QuestionDto?> UpdateQuestionAsync(int id, UpdateQuestionDto updateQuestionDto)
+    {
+        var question = await _context.Questions.FindAsync(id);
+        if (question == null)
+            return null;
+
+        question.QuestionText = updateQuestionDto.QuestionText;
+        question.Answer = updateQuestionDto.Answer;
+        question.ImageUrl = updateQuestionDto.ImageUrl;
+
+        await _context.SaveChangesAsync();
+
+        return new QuestionDto
+        {
+            Id = question.Id,
+            QuestionText = question.QuestionText,
+            Answer = question.Answer,
+            ImageUrl = question.ImageUrl,
+            CategoryId = question.CategoryId,
+            Order = question.Order
+        };
+    }
+
+    public async Task<bool> DeleteQuestionAsync(int id)
+    {
+        var question = await _context.Questions.FindAsync(id);
+        if (question == null)
+            return false;
+
+        _context.Questions.Remove(question);
+        await _context.SaveChangesAsync();
+        return true;
     }
 
     public async Task<EventDto?> GetEventWithDetailsAsync(int id)
@@ -269,6 +346,92 @@ public class EventService : IEventService
                     }).ToList()
                 }).ToList()
             }).ToList()
+        };
+    }
+
+    public async Task<EventDto> CloneEventAsync(int id)
+    {
+        var originalEvent = await _context.Events
+            .Include(e => e.Rounds)
+                .ThenInclude(r => r.Categories)
+                    .ThenInclude(c => c.Questions)
+            .FirstOrDefaultAsync(e => e.Id == id);
+
+        if (originalEvent == null)
+            throw new ArgumentException($"Event with id {id} not found");
+
+        // Create new event with "Copy of" prefix
+        var clonedEvent = new Event
+        {
+            Name = $"Copy of {originalEvent.Name}",
+            Description = originalEvent.Description,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _context.Events.Add(clonedEvent);
+        await _context.SaveChangesAsync();
+
+        // Clone rounds
+        foreach (var originalRound in originalEvent.Rounds.OrderBy(r => r.Order))
+        {
+            var clonedRound = new Round
+            {
+                Name = originalRound.Name,
+                EventId = clonedEvent.Id,
+                Order = originalRound.Order
+            };
+
+            _context.Rounds.Add(clonedRound);
+            await _context.SaveChangesAsync();
+
+            // Clone categories
+            foreach (var originalCategory in originalRound.Categories.OrderBy(c => c.Order))
+            {
+                var clonedCategory = new Category
+                {
+                    Name = originalCategory.Name,
+                    RoundId = clonedRound.Id,
+                    Order = originalCategory.Order
+                };
+
+                _context.Categories.Add(clonedCategory);
+                await _context.SaveChangesAsync();
+
+                // Clone questions
+                foreach (var originalQuestion in originalCategory.Questions.OrderBy(q => q.Order))
+                {
+                    var clonedQuestion = new Question
+                    {
+                        QuestionText = originalQuestion.QuestionText,
+                        Answer = originalQuestion.Answer,
+                        ImageUrl = originalQuestion.ImageUrl,
+                        CategoryId = clonedCategory.Id,
+                        Order = originalQuestion.Order
+                    };
+
+                    _context.Questions.Add(clonedQuestion);
+                }
+            }
+        }
+
+        await _context.SaveChangesAsync();
+
+        // Detach the cloned event to ensure fresh query
+        _context.Entry(clonedEvent).State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+
+        // Reload the event with all relationships to ensure it's fully available
+        var clonedEventDto = await GetEventByIdAsync(clonedEvent.Id);
+
+        return clonedEventDto ?? new EventDto
+        {
+            Id = clonedEvent.Id,
+            Name = clonedEvent.Name,
+            Description = clonedEvent.Description,
+            CreatedAt = clonedEvent.CreatedAt,
+            UpdatedAt = clonedEvent.UpdatedAt,
+            CategoryCount = 0,
+            QuestionCount = 0
         };
     }
 }

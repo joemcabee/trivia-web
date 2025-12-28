@@ -55,6 +55,20 @@ function Dashboard() {
     }
   }
 
+  const handleCloneEvent = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      const clonedEvent = await eventApi.cloneEvent(id)
+      loadEvents()
+      // Small delay to ensure backend has fully committed the changes
+      await new Promise(resolve => setTimeout(resolve, 200))
+      navigate(`/event/${clonedEvent.id}`)
+    } catch (error) {
+      console.error('Failed to clone event:', error)
+      alert('Failed to clone event')
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -96,12 +110,20 @@ function Dashboard() {
               >
                 <div className="flex justify-between items-start mb-4">
                   <h2 className="text-xl font-semibold text-gray-900">{event.name}</h2>
-                  <button
-                    onClick={(e) => handleDeleteEvent(event.id, e)}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => handleCloneEvent(event.id, e)}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    >
+                      Clone
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteEvent(event.id, e)}
+                      className="text-red-600 hover:text-red-800 text-sm font-medium"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
                 <p className="text-gray-600 mb-4">{event.description}</p>
                 <div className="flex justify-between text-sm text-gray-500">

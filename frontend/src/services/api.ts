@@ -100,14 +100,27 @@ export const eventApi = {
     await api.delete(`/events/${id}`)
   },
 
+  cloneEvent: async (id: number): Promise<Event> => {
+    const response = await api.post<Event>(`/events/${id}/clone`)
+    return response.data
+  },
+
   createRound: async (name: string, eventId: number): Promise<Round> => {
     const response = await api.post<Round>('/events/rounds', { name, eventId })
     return response.data
   },
 
+  deleteRound: async (id: number): Promise<void> => {
+    await api.delete(`/events/rounds/${id}`)
+  },
+
   createCategory: async (name: string, roundId: number): Promise<Category> => {
     const response = await api.post<Category>('/events/categories', { name, roundId })
     return response.data
+  },
+
+  deleteCategory: async (id: number): Promise<void> => {
+    await api.delete(`/events/categories/${id}`)
   },
 
   createQuestion: async (
@@ -123,6 +136,24 @@ export const eventApi = {
       imageUrl,
     })
     return response.data
+  },
+
+  updateQuestion: async (
+    id: number,
+    questionText: string,
+    answer: string,
+    imageUrl?: string
+  ): Promise<Question> => {
+    const response = await api.put<Question>(`/events/questions/${id}`, {
+      questionText,
+      answer,
+      imageUrl,
+    })
+    return response.data
+  },
+
+  deleteQuestion: async (id: number): Promise<void> => {
+    await api.delete(`/events/questions/${id}`)
   },
 
   getPresentationData: async (eventId: number): Promise<PresentationData> => {
