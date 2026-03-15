@@ -6,9 +6,8 @@ public class Round
     public string Name { get; set; } = string.Empty;
     public int EventId { get; set; }
     public int Order { get; set; }
-    
-    // Navigation properties
+    public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
+
     public Event Event { get; set; } = null!;
     public ICollection<Category> Categories { get; set; } = new List<Category>();
 }
-

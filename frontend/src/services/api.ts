@@ -1,13 +1,56 @@
 import axios from 'axios'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const TOKEN_KEY = 'trivia_app_token'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 })
+
+let onUnauthorized: (() => void) | null = null
+
+export function setAuthUnauthorizedHandler(handler: () => void) {
+  onUnauthorized = handler
+}
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem(TOKEN_KEY)
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) onUnauthorized?.()
+    return Promise.reject(error)
+  }
+)
+
+export interface LoginResponse {
+  token: string
+  userName: string
+  userId: string
+}
+
+export const authApi = {
+  login: async (userName: string, password: string): Promise<LoginResponse> => {
+    const { data } = await api.post<LoginResponse>('/auth/login', {
+      userName,
+      password,
+    })
+    return data
+  },
+
+  getMe: async (): Promise<{ userId: string; userName: string }> => {
+    const { data } = await api.get<{ userId: string; userName: string }>('/auth/me')
+    return data
+  },
+}
 
 export interface Event {
   id: number

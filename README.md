@@ -43,16 +43,18 @@ A full-stack web application for hosting trivia events with presentation mode fu
    cd backend
    ```
 
-2. Update the connection string in `appsettings.json`:
-   ```json
-   {
-     "ConnectionStrings": {
-       "DefaultConnection": "Host=localhost;Database=triviaapp;Username=your_username;Password=your_password"
-     }
-   }
+2. Configure the database and JWT (use [user secrets](https://learn.microsoft.com/en-us/aspnet/core/security/app-secrets) in development):
+   ```bash
+   dotnet user-secrets set "ConnectionStrings:SlackerDB" "Host=...;Database=slacker;..."
+   dotnet user-secrets set "Jwt:Key" "your-secret-key-at-least-32-chars"
    ```
+   Optionally set `Jwt:Issuer` and `Jwt:Audience` (defaults: `TriviaApp`). The API uses the existing `public."AspNetUsers"` table in the Slacker database for authentication.
 
-3. Restore packages and run the application:
+3. Database schema:
+   - **Option A**: Run SQL scripts in the `DB/` folder in order: `01_drop_old_trivia_tables.sql`, then `02_events.sql` through `05_questions.sql`, then `06_permissions.sql`.
+   - **Option B**: Let the app apply EF Core migrations on startup (same connection string). The migration will drop the old PascalCase trivia tables and create the new snake_case schema with `user_id` on events.
+
+4. Restore packages and run the application:
    ```bash
    dotnet restore
    dotnet run
@@ -81,9 +83,16 @@ A full-stack web application for hosting trivia events with presentation mode fu
 
 ## Database Setup
 
-The application will automatically create the database schema on first run using Entity Framework Core's `EnsureCreated()` method.
+- Trivia tables live in the `trivia` schema with snake_case names (`events`, `rounds`, `categories`, `questions`). All tables have a `created_on` timestamptz column; `events` also has `updated_on` and `user_id` (FK to `public."AspNetUsers"("Id")`).
+- Either run the scripts in the `DB/` folder or use EF Core migrations (see Backend Setup above).
 
 ## API Endpoints
+
+All trivia and presentation endpoints require a valid JWT (Bearer token) except auth.
+
+### Auth
+- `POST /api/auth/login` - Sign in (body: `userName`, `password`). Returns `token`, `userId`, `userName`.
+- `GET /api/auth/me` - Current user (requires auth).
 
 ### Events
 - `GET /api/events` - Get all events

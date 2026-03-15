@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { eventApi, Event } from '../services/api'
 
 function Dashboard() {
@@ -8,6 +9,7 @@ function Dashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [eventName, setEventName] = useState('')
   const [eventDescription, setEventDescription] = useState('')
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -80,14 +82,25 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-100 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
           <h1 className="text-4xl font-bold text-gray-900">Trivia Events</h1>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"
-          >
-            Create Event
-          </button>
+          <div className="flex items-center gap-4">
+            {user && (
+              <span className="text-gray-600 text-sm">Signed in as {user.userName}</span>
+            )}
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"
+            >
+              Create Event
+            </button>
+            <button
+              onClick={() => logout()}
+              className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg"
+            >
+              Log out
+            </button>
+          </div>
         </div>
 
         {events.length === 0 ? (

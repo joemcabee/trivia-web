@@ -1,0 +1,57 @@
+{
+  "version": 3,
+  "targets": {
+    "net6.0-none": {}
+  },
+  "libraries": {},
+  "projectFileDependencyGroups": {
+    "net6.0-none": []
+  },
+  "packageFolders": {
+    "/Users/joe/.nuget/packages/": {}
+  },
+  "project": {
+    "version": "1.0.0",
+    "restore": {
+      "projectUniqueName": "/Users/joe/Projects/trivia-app/frontend/TriviaApp.Frontend.esproj",
+      "projectName": "TriviaApp.Frontend",
+      "projectPath": "/Users/joe/Projects/trivia-app/frontend/TriviaApp.Frontend.esproj",
+      "packagesPath": "/Users/joe/.nuget/packages/",
+      "outputPath": "/Users/joe/Projects/trivia-app/frontend/obj/",
+      "projectStyle": "PackageReference",
+      "UsingMicrosoftNETSdk": false,
+      "configFilePaths": [
+        "/Users/joe/.nuget/NuGet/NuGet.Config"
+      ],
+      "originalTargetFrameworks": [
+        "net6.0"
+      ],
+      "sources": {
+        "https://api.nuget.org/v3/index.json": {}
+      },
+      "frameworks": {
+        "net6.0-none": {
+          "targetAlias": "net6.0",
+          "projectReferences": {}
+        }
+      },
+      "restoreAuditProperties": {
+        "enableAudit": "true",
+        "auditLevel": "low",
+        "auditMode": "direct"
+      }
+    },
+    "frameworks": {
+      "net6.0-none": {
+        "targetAlias": "net6.0"
+      }
+    }
+  },
+  "logs": [
+    {
+      "code": "NU1012",
+      "level": "Error",
+      "message": "Platform version is not present for one or more target frameworks, even though they have specified a platform: net6.0-none"
+    }
+  ]
+}

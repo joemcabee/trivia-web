@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TriviaApp.API.Data;
@@ -7,6 +9,7 @@ namespace TriviaApp.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class PresentationController : ControllerBase
 {
     private readonly TriviaDbContext _context;
@@ -19,11 +22,13 @@ public class PresentationController : ControllerBase
     [HttpGet("event/{eventId}")]
     public async Task<ActionResult<PresentationDataDto>> GetPresentationData(int eventId)
     {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
         var eventEntity = await _context.Events
+            .Where(e => e.Id == eventId && e.UserId == userId)
             .Include(e => e.Rounds)
                 .ThenInclude(r => r.Categories)
                     .ThenInclude(c => c.Questions)
-            .FirstOrDefaultAsync(e => e.Id == eventId);
+            .FirstOrDefaultAsync();
 
         if (eventEntity == null)
             return NotFound();

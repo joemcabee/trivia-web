@@ -8,8 +8,7 @@ public class Question
     public string? ImageUrl { get; set; }
     public int CategoryId { get; set; }
     public int Order { get; set; }
-    
-    // Navigation properties
+    public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
+
     public Category Category { get; set; } = null!;
 }
-

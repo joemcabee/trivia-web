@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { eventApi, EventDetails, Round, Category, Question } from '../services/api'
+import { eventApi, EventDetails, Question } from '../services/api'
 
 function EventManagement() {
   const { id } = useParams<{ id: string }>()
@@ -19,7 +19,6 @@ function EventManagement() {
   const [categoryName, setCategoryName] = useState('')
   const [questionText, setQuestionText] = useState('')
   const [answer, setAnswer] = useState('')
-  const [questionImage, setQuestionImage] = useState<File | null>(null)
   const [questionImageUrl, setQuestionImageUrl] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [editingQuestionId, setEditingQuestionId] = useState<number | null>(null)
@@ -118,7 +117,6 @@ function EventManagement() {
       }
       setQuestionText('')
       setAnswer('')
-      setQuestionImage(null)
       setQuestionImageUrl(null)
       setEditingQuestionId(null)
       setShowQuestionModal(false)
@@ -140,7 +138,6 @@ function EventManagement() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setQuestionImage(file)
       handleImageUpload(file)
     }
   }
@@ -359,7 +356,6 @@ function EventManagement() {
                   setEditingQuestionId(null)
                   setQuestionText('')
                   setAnswer('')
-                  setQuestionImage(null)
                   setQuestionImageUrl(null)
                   setShowQuestionModal(true)
                 }}
@@ -596,7 +592,6 @@ function EventManagement() {
                       setShowQuestionModal(false)
                       setQuestionText('')
                       setAnswer('')
-                      setQuestionImage(null)
                       setQuestionImageUrl(null)
                       setEditingQuestionId(null)
                     }}
