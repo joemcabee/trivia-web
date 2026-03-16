@@ -106,7 +106,7 @@ function Presentation() {
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col">
       <div className="flex-1 flex items-center justify-center p-8">
-        <div className="max-w-5xl w-full">
+        <div className="max-w-7xl w-full">
           <div className="bg-gray-800 rounded-lg p-8 shadow-2xl min-h-[60vh] flex flex-col">
             <div className="mb-4">
               <div className="text-sm text-gray-400 mb-2">
@@ -163,9 +163,6 @@ function Presentation() {
         >
           ← Previous
         </button>
-        <div className="text-sm text-gray-400">
-          Use arrow keys to navigate • ESC to exit
-        </div>
         <button
           onClick={handleNextSlide}
           disabled={currentSlideIndex === presentationData.slides.length - 1}

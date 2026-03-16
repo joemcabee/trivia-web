@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard'
 import EventManagement from './components/EventManagement'
 import Presentation from './components/Presentation'
 import Login from './components/Login'
+import SignUp from './components/SignUp'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth()
@@ -30,6 +31,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<SignUp />} />
       <Route
         path="/"
         element={

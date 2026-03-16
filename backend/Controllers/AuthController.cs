@@ -26,22 +26,53 @@ public class AuthController : ControllerBase
         _configuration = configuration;
     }
 
-    [HttpPost("login")]
-    public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
+    [HttpPost("register")]
+    public async Task<ActionResult<LoginResponse>> Register([FromBody] RegisterRequest request)
     {
-        var user = await _userManager.FindByNameAsync(request.UserName);
-        if (user == null)
-            return Unauthorized("Invalid username or password.");
+        if (string.IsNullOrWhiteSpace(request.Email))
+            return BadRequest("Email is required.");
+        if (string.IsNullOrWhiteSpace(request.Password))
+            return BadRequest("Password is required.");
 
-        var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: false);
+        var email = request.Email.Trim();
+        var user = new IdentityUser
+        {
+            UserName = email,
+            Email = email
+        };
+
+        var result = await _userManager.CreateAsync(user, request.Password);
         if (!result.Succeeded)
-            return Unauthorized("Invalid username or password.");
+        {
+            var firstError = result.Errors.FirstOrDefault()?.Description ?? "Registration failed.";
+            return BadRequest(firstError);
+        }
 
         var token = GenerateJwt(user);
         return Ok(new LoginResponse
         {
             Token = token,
-            UserName = user.UserName ?? request.UserName,
+            UserName = user.UserName ?? email,
+            UserId = user.Id
+        });
+    }
+
+    [HttpPost("login")]
+    public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest request)
+    {
+        var user = await _userManager.FindByEmailAsync(request.Email?.Trim() ?? string.Empty);
+        if (user == null)
+            return Unauthorized("Invalid email or password.");
+
+        var result = await _signInManager.CheckPasswordSignInAsync(user, request.Password, lockoutOnFailure: false);
+        if (!result.Succeeded)
+            return Unauthorized("Invalid email or password.");
+
+        var token = GenerateJwt(user);
+        return Ok(new LoginResponse
+        {
+            Token = token,
+            UserName = user.UserName ?? request.Email ?? string.Empty,
             UserId = user.Id
         });
     }
@@ -95,9 +126,15 @@ public class AuthController : ControllerBase
     }
 }
 
+public class RegisterRequest
+{
+    public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+}
+
 public class LoginRequest
 {
-    public string UserName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
 }
 
