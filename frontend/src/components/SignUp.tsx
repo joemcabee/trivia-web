@@ -47,18 +47,18 @@ export default function SignUp() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-      <div className="bg-white rounded-lg shadow-md p-8 max-w-md w-full">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center px-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 max-w-md w-full">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
           Create account
         </h1>
-        <p className="text-gray-600 text-center mb-6">
+        <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
           Sign up to manage your trivia events and run presentations.
         </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <div
-              className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded text-sm"
+              className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-3 py-2 rounded text-sm"
               role="alert"
             >
               {error}
@@ -67,7 +67,7 @@ export default function SignUp() {
           <div>
             <label
               htmlFor="email"
-              className="block text-gray-700 text-sm font-bold mb-2"
+              className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2"
             >
               Email
             </label>
@@ -76,7 +76,7 @@ export default function SignUp() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="shadow appearance-none border dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               autoComplete="email"
               required
             />
@@ -84,7 +84,7 @@ export default function SignUp() {
           <div>
             <label
               htmlFor="password"
-              className="block text-gray-700 text-sm font-bold mb-2"
+              className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2"
             >
               Password
             </label>
@@ -93,19 +93,19 @@ export default function SignUp() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="shadow appearance-none border dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               autoComplete="new-password"
               required
               minLength={6}
             />
-            <p className="text-gray-500 text-xs mt-1">
+            <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">
               At least 6 characters, with a digit, lowercase and uppercase letter.
             </p>
           </div>
           <div>
             <label
               htmlFor="confirmPassword"
-              className="block text-gray-700 text-sm font-bold mb-2"
+              className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2"
             >
               Confirm password
             </label>
@@ -114,7 +114,7 @@ export default function SignUp() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              className="shadow appearance-none border dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
               autoComplete="new-password"
               required
               minLength={6}
@@ -128,9 +128,9 @@ export default function SignUp() {
             {loading ? 'Creating account…' : 'Create account'}
           </button>
         </form>
-        <p className="text-center text-gray-600 text-sm mt-4">
+        <p className="text-center text-gray-600 dark:text-gray-400 text-sm mt-4">
           Already have an account?{' '}
-          <Link to="/login" className="text-blue-600 hover:text-blue-800 font-medium">
+          <Link to="/login" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium">
             Sign in
           </Link>
         </p>

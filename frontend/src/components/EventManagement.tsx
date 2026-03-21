@@ -214,16 +214,16 @@ function EventManagement() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-xl text-gray-900 dark:text-white">Loading...</div>
       </div>
     )
   }
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-xl">Event not found</div>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-xl text-gray-900 dark:text-white">Event not found</div>
       </div>
     )
   }
@@ -232,12 +232,12 @@ function EventManagement() {
   const currentCategory = currentRound?.categories.find((c) => c.id === selectedCategory)
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8 text-gray-900 dark:text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-6 flex justify-between items-center">
           <button
             onClick={() => navigate('/')}
-            className="text-blue-600 hover:text-blue-800 font-medium"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
           >
             ← Back to Dashboard
           </button>
@@ -251,20 +251,20 @@ function EventManagement() {
 
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-4xl font-bold text-gray-900">{event.name}</h1>
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">{event.name}</h1>
             <button
               onClick={handleEditEvent}
-              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
               title="Edit event name and description"
             >
               ✏️ Edit
             </button>
           </div>
-          <p className="text-gray-600">{event.description}</p>
+          <p className="text-gray-600 dark:text-gray-400">{event.description}</p>
         </div>
 
         {/* Rounds Section */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-semibold">Rounds</h2>
             <button
@@ -289,7 +289,7 @@ function EventManagement() {
                   className={`px-4 py-2 rounded ${
                     selectedRound === round.id
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
                   }`}
                 >
                   {round.name}
@@ -308,7 +308,7 @@ function EventManagement() {
 
         {/* Categories Section */}
         {currentRound && (
-          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-semibold">Categories - {currentRound.name}</h2>
               <button
@@ -326,7 +326,7 @@ function EventManagement() {
                     className={`px-4 py-2 rounded ${
                       selectedCategory === category.id
                         ? 'bg-green-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
                     }`}
                   >
                     {category.name}
@@ -346,7 +346,7 @@ function EventManagement() {
 
         {/* Questions Section */}
         {currentCategory && (
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-semibold">
                 Questions - {currentCategory.name}
@@ -368,31 +368,31 @@ function EventManagement() {
               {currentCategory.questions.map((question) => (
                 <div
                   key={question.id}
-                  className="border rounded-lg p-4 bg-gray-50 relative"
+                  className="border dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-700/50 relative"
                 >
                   <div className="absolute top-2 right-2 flex gap-2">
                     <button
                       onClick={() => handleEditQuestion(question)}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
                       title="Edit question"
                     >
                       Edit
                     </button>
                     <button
                       onClick={(e) => handleDeleteQuestion(question.id, e)}
-                      className="text-red-600 hover:text-red-800 text-sm font-medium"
+                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium"
                       title="Delete question"
                     >
                       Delete
                     </button>
                   </div>
                   <p className="text-lg font-medium mb-2 pr-24">{question.questionText}</p>
-                  <p className="text-gray-600">Answer: {question.answer}</p>
+                  <p className="text-gray-600 dark:text-gray-400">Answer: {question.answer}</p>
                   {question.imageUrl ? (
                     <img
                       src={`http://localhost:5000${question.imageUrl}`}
                       alt="Question"
-                      className="mt-2 max-w-xs rounded"
+                      className="mt-2 max-w-xs rounded shadow dark:shadow-gray-900"
                     />
                   ) : (
                     <div className="mt-2 text-gray-400 text-sm">No image</div>
@@ -405,29 +405,29 @@ function EventManagement() {
 
         {showEditEventModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h2 className="text-2xl font-bold mb-4">Edit Event</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Edit Event</h2>
               <form onSubmit={handleUpdateEvent}>
                 <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
                     Event Name
                   </label>
                   <input
                     type="text"
                     value={eventName}
                     onChange={(e) => setEventName(e.target.value)}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow appearance-none border dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     required
                   />
                 </div>
                 <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
                     Description
                   </label>
                   <textarea
                     value={eventDescription}
                     onChange={(e) => setEventDescription(e.target.value)}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow appearance-none border dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     rows={3}
                   />
                 </div>
@@ -439,7 +439,7 @@ function EventManagement() {
                       setEventName('')
                       setEventDescription('')
                     }}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
+                    className="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded"
                   >
                     Cancel
                   </button>
@@ -457,18 +457,18 @@ function EventManagement() {
 
         {showRoundModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h2 className="text-2xl font-bold mb-4">Add Round</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Add Round</h2>
               <form onSubmit={handleCreateRound}>
                 <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
                     Round Name
                   </label>
                   <input
                     type="text"
                     value={roundName}
                     onChange={(e) => setRoundName(e.target.value)}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow appearance-none border dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     required
                   />
                 </div>
@@ -479,7 +479,7 @@ function EventManagement() {
                       setShowRoundModal(false)
                       setRoundName('')
                     }}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
+                    className="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded"
                   >
                     Cancel
                   </button>
@@ -497,18 +497,18 @@ function EventManagement() {
 
         {showCategoryModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h2 className="text-2xl font-bold mb-4">Add Category</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Add Category</h2>
               <form onSubmit={handleCreateCategory}>
                 <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
                     Category Name
                   </label>
                   <input
                     type="text"
                     value={categoryName}
                     onChange={(e) => setCategoryName(e.target.value)}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow appearance-none border dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     required
                   />
                 </div>
@@ -519,7 +519,7 @@ function EventManagement() {
                       setShowCategoryModal(false)
                       setCategoryName('')
                     }}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
+                    className="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded"
                   >
                     Cancel
                   </button>
@@ -537,51 +537,51 @@ function EventManagement() {
 
         {showQuestionModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-              <h2 className="text-2xl font-bold mb-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
                 {editingQuestionId ? 'Edit Question' : 'Add Question'}
               </h2>
               <form onSubmit={handleCreateQuestion}>
                 <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
                     Question
                   </label>
                   <textarea
                     value={questionText}
                     onChange={(e) => setQuestionText(e.target.value)}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow appearance-none border dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     rows={3}
                     required
                   />
                 </div>
                 <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
                     Answer
                   </label>
                   <textarea
                     value={answer}
                     onChange={(e) => setAnswer(e.target.value)}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow appearance-none border dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     rows={2}
                     required
                   />
                 </div>
                 <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
                     Image (optional)
                   </label>
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleImageChange}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow appearance-none border dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                   />
-                  {uploadingImage && <p className="text-sm text-gray-500 mt-1">Uploading...</p>}
+                  {uploadingImage && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Uploading...</p>}
                   {questionImageUrl && (
                     <img
                       src={`http://localhost:5000${questionImageUrl}`}
                       alt="Preview"
-                      className="mt-2 max-w-xs rounded"
+                      className="mt-2 max-w-xs rounded shadow dark:shadow-gray-900"
                     />
                   )}
                 </div>
@@ -595,7 +595,7 @@ function EventManagement() {
                       setQuestionImageUrl(null)
                       setEditingQuestionId(null)
                     }}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
+                    className="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded"
                   >
                     Cancel
                   </button>

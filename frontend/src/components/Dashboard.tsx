@@ -73,20 +73,20 @@ function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-xl text-gray-900 dark:text-white">Loading...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
-          <h1 className="text-4xl font-bold text-gray-900">Trivia Events</h1>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Trivia Events</h1>
           <div className="flex items-center gap-4">
             {user && (
-              <span className="text-gray-600 text-sm">Signed in as {user.userName}</span>
+              <span className="text-gray-600 dark:text-gray-400 text-sm">Signed in as {user.userName}</span>
             )}
             <button
               onClick={() => setShowCreateModal(true)}
@@ -105,7 +105,7 @@ function Dashboard() {
 
         {events.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg mb-4">No events yet</p>
+            <p className="text-gray-500 dark:text-gray-400 text-lg mb-4">No events yet</p>
             <button
               onClick={() => setShowCreateModal(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg"
@@ -119,27 +119,27 @@ function Dashboard() {
               <div
                 key={event.id}
                 onClick={() => navigate(`/event/${event.id}`)}
-                className="bg-white rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow"
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg dark:hover:shadow-gray-900/50 transition-shadow"
               >
                 <div className="flex justify-between items-start mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900">{event.name}</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{event.name}</h2>
                   <div className="flex gap-2">
                     <button
                       onClick={(e) => handleCloneEvent(event.id, e)}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
                     >
                       Clone
                     </button>
                     <button
                       onClick={(e) => handleDeleteEvent(event.id, e)}
-                      className="text-red-600 hover:text-red-800 text-sm font-medium"
+                      className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-medium"
                     >
                       Delete
                     </button>
                   </div>
                 </div>
-                <p className="text-gray-600 mb-4">{event.description}</p>
-                <div className="flex justify-between text-sm text-gray-500">
+                <p className="text-gray-600 dark:text-gray-300 mb-4">{event.description}</p>
+                <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
                   <span>{event.categoryCount} Categories</span>
                   <span>{event.questionCount} Questions</span>
                 </div>
@@ -161,29 +161,29 @@ function Dashboard() {
 
         {showCreateModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <h2 className="text-2xl font-bold mb-4">Create New Event</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+              <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Create New Event</h2>
               <form onSubmit={handleCreateEvent}>
                 <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
                     Event Name
                   </label>
                   <input
                     type="text"
                     value={eventName}
                     onChange={(e) => setEventName(e.target.value)}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow appearance-none border dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     required
                   />
                 </div>
                 <div className="mb-4">
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
                     Description
                   </label>
                   <textarea
                     value={eventDescription}
                     onChange={(e) => setEventDescription(e.target.value)}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    className="shadow appearance-none border dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                     rows={3}
                   />
                 </div>
@@ -195,7 +195,7 @@ function Dashboard() {
                       setEventName('')
                       setEventDescription('')
                     }}
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
+                    className="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded"
                   >
                     Cancel
                   </button>

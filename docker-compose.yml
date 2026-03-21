@@ -1,0 +1,22 @@
+services:
+  backend:
+    image: cr.slackersoftware.com/slacker-trivia-web-be:latest
+    ports:
+      - "3012:80"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__SlackerDB: "Host=192.168.68.105;Port=5432;Database=slacker;Username=service_user;Password=oakenshield"
+      Jwt__Issuer: "https://trivia-api.slackersoftware.com/"
+      Jwt__Audience: "https://trivia.slackersoftware.com"
+    volumes:
+      - /home/joe/Slacker/slacker-trivia-web/backend/wwwroot:/app/wwwroot
+
+  frontend:
+    image: cr.slackersoftware.com/slacker-trivia-web-fe:latest
+    ports:
+      - "3011:80"
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: production
+      VITE_API_URL: "https://trivia-api.slackersoftware.com/api"

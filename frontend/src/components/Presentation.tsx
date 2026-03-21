@@ -81,16 +81,16 @@ function Presentation() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-gray-900 dark:text-white text-xl">Loading...</div>
       </div>
     )
   }
 
   if (!presentationData || presentationData.slides.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl">No slides available</div>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-gray-900 dark:text-white text-xl">No slides available</div>
       </div>
     )
   }
@@ -104,15 +104,15 @@ function Presentation() {
   const showImage = hasImageUrl && windowHeight > 700 && (!isAnswerSlide || windowHeight > 900)
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white flex flex-col">
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="max-w-7xl w-full">
-          <div className="bg-gray-800 rounded-lg p-8 shadow-2xl min-h-[60vh] flex flex-col">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-2xl min-h-[60vh] flex flex-col">
             <div className="mb-4">
-              <div className="text-sm text-gray-400 mb-2">
+              <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 {currentSlide.roundName || 'Round'} • {currentSlide.categoryName || 'Category'} • Question {currentSlide.questionNumber || 0}
               </div>
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-gray-400 dark:text-gray-500">
                 Slide {currentSlideIndex + 1} of {presentationData.slides.length}
               </div>
             </div>
@@ -121,7 +121,7 @@ function Presentation() {
               <div className="w-full text-center mb-6">
                 <h2
                   className={`text-4xl font-bold mb-6 ${
-                    isAnswerSlide ? 'text-blue-400' : 'text-white'
+                    isAnswerSlide ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
                   }`}
                   style={{ lineHeight: '1.5' }}
                 >
@@ -130,7 +130,7 @@ function Presentation() {
 
                 {isAnswerSlide && (
                   <div className="mt-6">
-                    <p className="text-3xl font-semibold text-green-400" style={{ lineHeight: '1.5' }}>
+                    <p className="text-3xl font-semibold text-green-600 dark:text-green-400" style={{ lineHeight: '1.5' }}>
                       {currentSlide.answer}
                     </p>
                   </div>
@@ -147,7 +147,7 @@ function Presentation() {
                 </div>
               ) : !hasImageUrl ? (
                 <div className="mt-6 flex justify-center">
-                  <div className="text-9xl text-gray-700">?</div>
+                  <div className="text-9xl text-gray-200 dark:text-gray-700">?</div>
                 </div>
               ) : null}
             </div>
@@ -155,18 +155,18 @@ function Presentation() {
         </div>
       </div>
 
-      <div className="bg-gray-800 p-4 flex justify-between items-center">
+      <div className="bg-white dark:bg-gray-800 p-4 border-t dark:border-gray-700 flex justify-between items-center">
         <button
           onClick={handlePreviousSlide}
           disabled={currentSlideIndex === 0}
-          className="bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold py-2 px-4 rounded"
+          className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 text-gray-700 dark:text-white font-bold py-2 px-4 rounded"
         >
           ← Previous
         </button>
         <button
           onClick={handleNextSlide}
           disabled={currentSlideIndex === presentationData.slides.length - 1}
-          className="bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:text-gray-500 text-white font-bold py-2 px-4 rounded"
+          className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-500 text-gray-700 dark:text-white font-bold py-2 px-4 rounded"
         >
           Next →
         </button>
