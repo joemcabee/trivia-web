@@ -42,4 +42,4 @@ jobs:
         push: true
         tags: ${{ vars.DOCKER_SERVER }}/slacker-trivia-web-fe:latest
         build-args: |
-          VITE_API_URL=https://trivia-api.slackersoftware.com/api
+          VITE_API_URL=https://trivia-api.slackersoftware.com
