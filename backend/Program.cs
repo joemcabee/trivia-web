@@ -132,15 +132,6 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.MapControllers();
 
-// Apply database migrations
-// using (var scope = app.Services.CreateScope())
-// {
-//     var context = scope.ServiceProvider.GetRequiredService<TriviaDbContext>();
-//     context.Database.Migrate();
-// }
-
-app.Urls.Add("http://localhost:5000");
-
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 logger.LogInformation("Application is starting...");
 
