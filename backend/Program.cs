@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using NLog;
+using NLog.Targets;
+using NLog.Web;
 using TriviaApp.API.Data;
 using TriviaApp.API.Services;
 
@@ -60,6 +63,15 @@ builder.Services.AddDbContext<TriviaDbContext>(options =>
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
+
+var logConfiguration = LogManager.Configuration ?? throw new InvalidOperationException("NLog configuration is not set.");
+var logTarget = logConfiguration.FindTargetByName("database")
+    ?? throw new InvalidOperationException("Database target 'database' is not configured.");
+var dbLog = logTarget as DatabaseTarget
+    ?? throw new InvalidOperationException("Log target is not of type DatabaseTarget.");
+dbLog.ConnectionString = connectionString;
+
+builder.Host.UseNLog();
 
 builder.Services.AddIdentityCore<IdentityUser>(options =>
 {
@@ -128,5 +140,21 @@ app.MapControllers();
 // }
 
 app.Urls.Add("http://localhost:5000");
-app.Run();
+
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+logger.LogInformation("Application is starting...");
+
+try
+{
+    app.Run();
+}
+catch (Exception ex)
+{
+    logger.LogError(ex, "An error occurred while starting the application.");
+}
+finally
+{
+    logger.LogInformation("Application is shutting down...");
+    LogManager.Shutdown();
+}
 
