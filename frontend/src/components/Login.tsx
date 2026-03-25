@@ -37,7 +37,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center px-4">
+    <div className="flex-grow flex bg-gray-100 dark:bg-gray-900 items-center justify-center px-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 max-w-md w-full">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 text-center">
           Trivia Night

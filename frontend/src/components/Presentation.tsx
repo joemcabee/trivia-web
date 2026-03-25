@@ -42,6 +42,7 @@ function Presentation() {
         })
       } else if (e.key === 'Escape') {
         navigate(`/event/${id}`)
+        e.preventDefault()
       }
     }
 

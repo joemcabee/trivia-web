@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { setAuthUnauthorizedHandler } from './services/api'
 import Dashboard from './components/Dashboard'
@@ -12,7 +12,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth()
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+      <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-xl text-gray-900 dark:text-white">Loading...</div>
       </div>
     )
@@ -61,11 +61,45 @@ function AppRoutes() {
   )
 }
 
+function AppContent() {
+  const location = useLocation()
+  const hideFooter = /^\/event\/[^/]+\/present$/.test(location.pathname)
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <AppRoutes />
+      {!hideFooter && (
+        <footer className="bg-gray-100 dark:bg-gray-900 text-center py-3 text-sm text-gray-600 dark:text-gray-300">
+          <div>
+            <a
+              className="underline hover:text-gray-800 dark:hover:text-white mx-2"
+              href="https://www.slackersoftware.com"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Slacker Software
+            </a>
+            |
+            <a
+              className="underline hover:text-gray-800 dark:hover:text-white mx-2"
+              href="https://www.slackersoftware.com/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy Policy
+            </a>
+          </div>
+        </footer>
+      )}
+    </div>
+  )
+}
+
 function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppRoutes />
+        <AppContent />
       </AuthProvider>
     </Router>
   )

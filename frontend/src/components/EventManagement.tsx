@@ -214,7 +214,7 @@ function EventManagement() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+      <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-xl text-gray-900 dark:text-white">Loading...</div>
       </div>
     )
@@ -222,7 +222,7 @@ function EventManagement() {
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
+      <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-xl text-gray-900 dark:text-white">Event not found</div>
       </div>
     )
@@ -232,7 +232,7 @@ function EventManagement() {
   const currentCategory = currentRound?.categories.find((c) => c.id === selectedCategory)
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8 text-gray-900 dark:text-white">
+    <div className="flex-grow bg-gray-100 dark:bg-gray-900 py-8 text-gray-900 dark:text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-6 flex justify-between items-center">
           <button
