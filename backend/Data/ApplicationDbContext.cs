@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using TriviaApp.API.Models;
 
 namespace TriviaApp.API.Data;
 
@@ -13,6 +14,8 @@ public class ApplicationDbContext : IdentityDbContext
         : base(options)
     {
     }
+
+    public DbSet<Support> Supports { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -46,6 +49,25 @@ public class ApplicationDbContext : IdentityDbContext
         builder.Entity<Microsoft.AspNetCore.Identity.IdentityUserToken<string>>(entity =>
         {
             entity.ToTable("AspNetUserTokens", "public");
+        });
+
+        builder.Entity<Support>(entity =>
+        {
+            entity.ToTable("support", "public");
+            entity.HasKey(s => s.SupportId).HasName("support_pkey");
+
+            entity.Property(s => s.SupportId).HasColumnName("support_id");
+            entity.Property(s => s.UserId).HasColumnName("user_id").HasMaxLength(450).IsRequired();
+            entity.Property(s => s.Application).HasColumnName("application").HasMaxLength(100).IsRequired();
+            entity.Property(s => s.MessageText).HasColumnName("message_text").IsRequired();
+            entity.Property(s => s.CreatedOn).HasColumnName("created_on");
+            entity.Property(s => s.IsOpen).HasColumnName("is_open");
+            entity.Property(s => s.ClosedOn).HasColumnName("closed_on");
+
+            entity.HasOne<Microsoft.AspNetCore.Identity.IdentityUser>()
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .HasConstraintName("support_user_id_fkey");
         });
     }
 }

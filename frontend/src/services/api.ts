@@ -224,5 +224,14 @@ export const eventApi = {
   },
 }
 
+
+export const supportApi = {
+  createSupportRequest: async (messageText: string): Promise<{ supportId: number }> => {
+    const { data } = await api.post<{ supportId: number }>('/support', {
+      messageText,
+    })
+    return data
+  },
+}
 export default api
 
