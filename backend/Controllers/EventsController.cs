@@ -156,6 +156,69 @@ public class EventsController : ControllerBase
         return NoContent();
     }
 
+    [HttpPost("teams")]
+    public async Task<ActionResult<TeamDto>> CreateTeam(CreateTeamDto createTeamDto)
+    {
+        try
+        {
+            var teamDto = await _eventService.CreateTeamAsync(createTeamDto, UserId);
+            return Ok(teamDto);
+        }
+        catch (ArgumentException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpPut("teams/{id}")]
+    public async Task<ActionResult<TeamDto>> UpdateTeam(int id, UpdateTeamDto updateTeamDto)
+    {
+        try
+        {
+            var teamDto = await _eventService.UpdateTeamAsync(id, updateTeamDto, UserId);
+            if (teamDto == null)
+                return NotFound();
+
+            return Ok(teamDto);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpDelete("teams/{id}")]
+    public async Task<IActionResult> DeleteTeam(int id)
+    {
+        var deleted = await _eventService.DeleteTeamAsync(id, UserId);
+        if (!deleted)
+            return NotFound();
+
+        return NoContent();
+    }
+
+    [HttpPut("rounds/{id}/team-points")]
+    public async Task<ActionResult<List<TeamPointDto>>> SetRoundTeamPoints(int id, SetRoundTeamPointsDto setRoundTeamPointsDto)
+    {
+        try
+        {
+            var teamPoints = await _eventService.SetRoundTeamPointsAsync(id, setRoundTeamPointsDto, UserId);
+            return Ok(teamPoints);
+        }
+        catch (ArgumentException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
     [HttpPost("{id}/clone")]
     public async Task<ActionResult<EventDto>> CloneEvent(int id)
     {

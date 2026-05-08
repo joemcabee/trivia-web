@@ -14,6 +14,8 @@ public class EventService : IEventService
         _context = context;
     }
 
+    private static string NormalizeTeamName(string name) => name.Trim();
+
     public async Task<List<EventDto>> GetAllEventsAsync(string userId)
     {
         var events = await _context.Events
@@ -318,6 +320,151 @@ public class EventService : IEventService
         return true;
     }
 
+    public async Task<TeamDto> CreateTeamAsync(CreateTeamDto createTeamDto, string userId)
+    {
+        var normalizedTeamName = NormalizeTeamName(createTeamDto.Name);
+        if (string.IsNullOrWhiteSpace(normalizedTeamName))
+            throw new InvalidOperationException("Team name is required.");
+
+        var eventExists = await _context.Events
+            .AnyAsync(e => e.Id == createTeamDto.EventId && e.UserId == userId);
+        if (!eventExists)
+            throw new ArgumentException("Event not found or access denied.");
+
+        var teamNameExists = await _context.Teams
+            .AnyAsync(t => t.EventId == createTeamDto.EventId &&
+                           t.Name.ToLower() == normalizedTeamName.ToLower());
+        if (teamNameExists)
+            throw new InvalidOperationException("Team name must be unique within an event.");
+
+        var team = new Team
+        {
+            Name = normalizedTeamName,
+            EventId = createTeamDto.EventId,
+            CreatedOn = DateTime.UtcNow
+        };
+
+        _context.Teams.Add(team);
+        await _context.SaveChangesAsync();
+
+        return new TeamDto
+        {
+            Id = team.Id,
+            Name = team.Name,
+            EventId = team.EventId
+        };
+    }
+
+    public async Task<TeamDto?> UpdateTeamAsync(int id, UpdateTeamDto updateTeamDto, string userId)
+    {
+        var normalizedTeamName = NormalizeTeamName(updateTeamDto.Name);
+        if (string.IsNullOrWhiteSpace(normalizedTeamName))
+            throw new InvalidOperationException("Team name is required.");
+
+        var team = await _context.Teams
+            .Include(t => t.Event)
+            .FirstOrDefaultAsync(t => t.Id == id);
+        if (team == null || team.Event.UserId != userId)
+            return null;
+
+        var duplicateTeamName = await _context.Teams
+            .AnyAsync(t => t.EventId == team.EventId &&
+                           t.Id != team.Id &&
+                           t.Name.ToLower() == normalizedTeamName.ToLower());
+        if (duplicateTeamName)
+            throw new InvalidOperationException("Team name must be unique within an event.");
+
+        team.Name = normalizedTeamName;
+        await _context.SaveChangesAsync();
+
+        return new TeamDto
+        {
+            Id = team.Id,
+            Name = team.Name,
+            EventId = team.EventId
+        };
+    }
+
+    public async Task<bool> DeleteTeamAsync(int id, string userId)
+    {
+        var team = await _context.Teams
+            .Include(t => t.Event)
+            .FirstOrDefaultAsync(t => t.Id == id);
+        if (team == null || team.Event.UserId != userId)
+            return false;
+
+        _context.Teams.Remove(team);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<List<TeamPointDto>> SetRoundTeamPointsAsync(int roundId, SetRoundTeamPointsDto setRoundTeamPointsDto, string userId)
+    {
+        var roundTeamPoints = setRoundTeamPointsDto.TeamPoints ?? new List<SetRoundTeamPointItemDto>();
+
+        if (roundTeamPoints.Count == 0)
+            return new List<TeamPointDto>();
+
+        var round = await _context.Rounds
+            .Include(r => r.Event)
+            .FirstOrDefaultAsync(r => r.Id == roundId);
+        if (round == null || round.Event.UserId != userId)
+            throw new ArgumentException("Round not found or access denied.");
+
+        var teamIds = roundTeamPoints
+            .Select(tp => tp.TeamId)
+            .ToList();
+
+        if (teamIds.Count != teamIds.Distinct().Count())
+            throw new InvalidOperationException("Duplicate team IDs are not allowed in a single round update.");
+
+        var matchingTeamIds = await _context.Teams
+            .Where(t => t.EventId == round.EventId && teamIds.Contains(t.Id))
+            .Select(t => t.Id)
+            .ToListAsync();
+
+        if (matchingTeamIds.Count != teamIds.Count)
+            throw new InvalidOperationException("All teams must belong to the same event as the selected round.");
+
+        var existingTeamPoints = await _context.TeamPoints
+            .Where(tp => tp.RoundId == roundId && teamIds.Contains(tp.TeamId))
+            .ToListAsync();
+
+        var existingByTeamId = existingTeamPoints.ToDictionary(tp => tp.TeamId);
+
+        foreach (var teamPointInput in roundTeamPoints)
+        {
+            if (existingByTeamId.TryGetValue(teamPointInput.TeamId, out var existingTeamPoint))
+            {
+                existingTeamPoint.Points = teamPointInput.Points;
+            }
+            else
+            {
+                _context.TeamPoints.Add(new TeamPoint
+                {
+                    TeamId = teamPointInput.TeamId,
+                    RoundId = roundId,
+                    Points = teamPointInput.Points,
+                    CreatedOn = DateTime.UtcNow
+                });
+            }
+        }
+
+        await _context.SaveChangesAsync();
+
+        return await _context.TeamPoints
+            .Where(tp => tp.RoundId == roundId && teamIds.Contains(tp.TeamId))
+            .OrderBy(tp => tp.TeamId)
+            .Select(tp => new TeamPointDto
+            {
+                Id = tp.Id,
+                TeamId = tp.TeamId,
+                RoundId = tp.RoundId,
+                Points = tp.Points
+            })
+            .ToListAsync();
+    }
+
     public async Task<EventDto?> GetEventWithDetailsAsync(int id, string userId)
     {
         var eventEntity = await _context.Events
@@ -349,6 +496,8 @@ public class EventService : IEventService
             .Include(e => e.Rounds)
                 .ThenInclude(r => r.Categories)
                     .ThenInclude(c => c.Questions)
+            .Include(e => e.Teams)
+                .ThenInclude(t => t.TeamPoints)
             .FirstOrDefaultAsync(e => e.Id == id);
 
         if (eventEntity == null)
@@ -383,7 +532,28 @@ public class EventService : IEventService
                         Order = q.Order
                     }).ToList()
                 }).ToList()
-            }).ToList()
+            }).ToList(),
+            Teams = eventEntity.Teams
+                .OrderBy(t => t.Name)
+                .Select(t => new TeamDto
+                {
+                    Id = t.Id,
+                    Name = t.Name,
+                    EventId = t.EventId
+                })
+                .ToList(),
+            TeamPoints = eventEntity.Teams
+                .SelectMany(t => t.TeamPoints)
+                .OrderBy(tp => tp.RoundId)
+                .ThenBy(tp => tp.TeamId)
+                .Select(tp => new TeamPointDto
+                {
+                    Id = tp.Id,
+                    TeamId = tp.TeamId,
+                    RoundId = tp.RoundId,
+                    Points = tp.Points
+                })
+                .ToList()
         };
     }
 

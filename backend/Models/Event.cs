@@ -10,4 +10,5 @@ public class Event
     public string UserId { get; set; } = string.Empty;
 
     public ICollection<Round> Rounds { get; set; } = new List<Round>();
+    public ICollection<Team> Teams { get; set; } = new List<Team>();
 }

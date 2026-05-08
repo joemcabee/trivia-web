@@ -78,6 +78,19 @@ export interface Round {
   categories: Category[]
 }
 
+export interface Team {
+  id: number
+  name: string
+  eventId: number
+}
+
+export interface TeamPoint {
+  id: number
+  teamId: number
+  roundId: number
+  points: number
+}
+
 export interface Category {
   id: number
   name: string
@@ -102,6 +115,8 @@ export interface EventDetails {
   createdAt: string
   updatedAt: string
   rounds: Round[]
+  teams: Team[]
+  teamPoints: TeamPoint[]
 }
 
 export interface PresentationSlide {
@@ -205,6 +220,30 @@ export const eventApi = {
 
   deleteQuestion: async (id: number): Promise<void> => {
     await api.delete(`/events/questions/${id}`)
+  },
+
+  createTeam: async (name: string, eventId: number): Promise<Team> => {
+    const response = await api.post<Team>('/events/teams', { name, eventId })
+    return response.data
+  },
+
+  updateTeam: async (id: number, name: string): Promise<Team> => {
+    const response = await api.put<Team>(`/events/teams/${id}`, { name })
+    return response.data
+  },
+
+  deleteTeam: async (id: number): Promise<void> => {
+    await api.delete(`/events/teams/${id}`)
+  },
+
+  setRoundTeamPoints: async (
+    roundId: number,
+    teamPoints: Array<{ teamId: number; points: number }>
+  ): Promise<TeamPoint[]> => {
+    const response = await api.put<TeamPoint[]>(`/events/rounds/${roundId}/team-points`, {
+      teamPoints,
+    })
+    return response.data
   },
 
   getPresentationData: async (eventId: number): Promise<PresentationData> => {

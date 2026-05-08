@@ -8,6 +8,8 @@ public class EventDetailsDto
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public List<RoundDetailsDto> Rounds { get; set; } = new();
+    public List<TeamDto> Teams { get; set; } = new();
+    public List<TeamPointDto> TeamPoints { get; set; } = new();
 }
 
 public class RoundDetailsDto

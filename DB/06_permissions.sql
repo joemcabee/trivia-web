@@ -17,3 +17,9 @@ GRANT USAGE, SELECT ON SEQUENCE trivia.categories_id_seq TO service_user;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON trivia.questions TO service_user;
 GRANT USAGE, SELECT ON SEQUENCE trivia.questions_id_seq TO service_user;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON trivia.teams TO service_user;
+GRANT USAGE, SELECT ON SEQUENCE trivia.teams_id_seq TO service_user;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON trivia.team_points TO service_user;
+GRANT USAGE, SELECT ON SEQUENCE trivia.team_points_id_seq TO service_user;

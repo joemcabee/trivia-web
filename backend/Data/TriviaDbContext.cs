@@ -13,6 +13,8 @@ public class TriviaDbContext : DbContext
     public DbSet<Round> Rounds { get; set; }
     public DbSet<Category> Categories { get; set; }
     public DbSet<Question> Questions { get; set; }
+    public DbSet<Team> Teams { get; set; }
+    public DbSet<TeamPoint> TeamPoints { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -34,6 +36,10 @@ public class TriviaDbContext : DbContext
                   .WithOne(r => r.Event)
                   .HasForeignKey(r => r.EventId)
                   .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(e => e.Teams)
+                  .WithOne(t => t.Event)
+                  .HasForeignKey(t => t.EventId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Round>(entity =>
@@ -52,6 +58,30 @@ public class TriviaDbContext : DbContext
             entity.HasMany(r => r.Categories)
                   .WithOne(c => c.Round)
                   .HasForeignKey(c => c.RoundId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(r => r.TeamPoints)
+                  .WithOne(tp => tp.Round)
+                  .HasForeignKey(tp => tp.RoundId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<Team>(entity =>
+        {
+            entity.ToTable("teams");
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.Id).HasColumnName("id");
+            entity.Property(t => t.Name).IsRequired().HasMaxLength(200).HasColumnName("name");
+            entity.Property(t => t.EventId).HasColumnName("event_id");
+            entity.Property(t => t.CreatedOn).HasColumnName("created_on");
+            entity.HasIndex(t => t.EventId).HasDatabaseName("ix_teams_event_id");
+            entity.HasIndex(t => new { t.EventId, t.Name }).IsUnique().HasDatabaseName("ux_teams_event_id_name");
+            entity.HasOne(t => t.Event)
+                  .WithMany(e => e.Teams)
+                  .HasForeignKey(t => t.EventId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(t => t.TeamPoints)
+                  .WithOne(tp => tp.Team)
+                  .HasForeignKey(tp => tp.TeamId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -88,6 +118,28 @@ public class TriviaDbContext : DbContext
             entity.HasOne(q => q.Category)
                   .WithMany(c => c.Questions)
                   .HasForeignKey(q => q.CategoryId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<TeamPoint>(entity =>
+        {
+            entity.ToTable("team_points");
+            entity.HasKey(tp => tp.Id);
+            entity.Property(tp => tp.Id).HasColumnName("id");
+            entity.Property(tp => tp.TeamId).HasColumnName("team_id");
+            entity.Property(tp => tp.RoundId).HasColumnName("round_id");
+            entity.Property(tp => tp.Points).HasColumnName("points");
+            entity.Property(tp => tp.CreatedOn).HasColumnName("created_on");
+            entity.HasIndex(tp => tp.TeamId).HasDatabaseName("ix_team_points_team_id");
+            entity.HasIndex(tp => tp.RoundId).HasDatabaseName("ix_team_points_round_id");
+            entity.HasIndex(tp => new { tp.TeamId, tp.RoundId }).IsUnique().HasDatabaseName("ux_team_points_team_id_round_id");
+            entity.HasOne(tp => tp.Team)
+                  .WithMany(t => t.TeamPoints)
+                  .HasForeignKey(tp => tp.TeamId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(tp => tp.Round)
+                  .WithMany(r => r.TeamPoints)
+                  .HasForeignKey(tp => tp.RoundId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

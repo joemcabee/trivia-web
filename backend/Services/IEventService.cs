@@ -16,6 +16,10 @@ public interface IEventService
     Task<QuestionDto> CreateQuestionAsync(CreateQuestionDto createQuestionDto, string userId);
     Task<QuestionDto?> UpdateQuestionAsync(int id, UpdateQuestionDto updateQuestionDto, string userId);
     Task<bool> DeleteQuestionAsync(int id, string userId);
+    Task<TeamDto> CreateTeamAsync(CreateTeamDto createTeamDto, string userId);
+    Task<TeamDto?> UpdateTeamAsync(int id, UpdateTeamDto updateTeamDto, string userId);
+    Task<bool> DeleteTeamAsync(int id, string userId);
+    Task<List<TeamPointDto>> SetRoundTeamPointsAsync(int roundId, SetRoundTeamPointsDto setRoundTeamPointsDto, string userId);
     Task<EventDto?> GetEventWithDetailsAsync(int id, string userId);
     Task<EventDetailsDto?> GetEventDetailsAsync(int id, string userId);
     Task<EventDto> CloneEventAsync(int id, string userId);

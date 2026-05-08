@@ -51,7 +51,7 @@ A full-stack web application for hosting trivia events with presentation mode fu
    Optionally set `Jwt:Issuer` and `Jwt:Audience` (defaults: `TriviaApp`). The API uses the existing `public."AspNetUsers"` table in the Slacker database for authentication.
 
 3. Database schema:
-   - **Option A**: Run SQL scripts in the `DB/` folder in order: `01_drop_old_trivia_tables.sql`, then `02_events.sql` through `05_questions.sql`, then `06_permissions.sql`.
+   - **Option A**: Run SQL scripts in the `DB/` folder in order: `01_drop_old_trivia_tables.sql`, `02_events.sql`, `03_rounds.sql`, `04_categories.sql`, `05_questions.sql`, `07_teams.sql`, `08_team_points.sql`, then `06_permissions.sql`.
    - **Option B**: Let the app apply EF Core migrations on startup (same connection string). The migration will drop the old PascalCase trivia tables and create the new snake_case schema with `user_id` on events.
 
 4. Restore packages and run the application:
@@ -83,7 +83,7 @@ A full-stack web application for hosting trivia events with presentation mode fu
 
 ## Database Setup
 
-- Trivia tables live in the `trivia` schema with snake_case names (`events`, `rounds`, `categories`, `questions`). All tables have a `created_on` timestamptz column; `events` also has `updated_on` and `user_id` (FK to `public."AspNetUsers"("Id")`).
+- Trivia tables live in the `trivia` schema with snake_case names (`events`, `rounds`, `categories`, `questions`, `teams`, `team_points`). All tables have a `created_on` timestamptz column; `events` also has `updated_on` and `user_id` (FK to `public."AspNetUsers"("Id")`).
 - Either run the scripts in the `DB/` folder or use EF Core migrations (see Backend Setup above).
 
 ## API Endpoints
