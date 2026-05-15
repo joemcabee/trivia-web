@@ -140,8 +140,8 @@ function Dashboard() {
                 </div>
                 <p className="text-gray-600 dark:text-gray-300 mb-4">{event.description}</p>
                 <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
-                  <span>{event.categoryCount} Categories</span>
-                  <span>{event.questionCount} Questions</span>
+                  <span>{event.roundCount} Rounds</span>
+                  <span>{event.teamCount} Teams</span>
                 </div>
                 <div className="mt-4 flex gap-2">
                   <button

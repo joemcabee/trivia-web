@@ -23,6 +23,7 @@ public class EventService : IEventService
             .Include(e => e.Rounds)
                 .ThenInclude(r => r.Categories)
                     .ThenInclude(c => c.Questions)
+            .Include(e => e.Teams)
             .ToListAsync();
 
         return events.Select(e => new EventDto
@@ -32,6 +33,8 @@ public class EventService : IEventService
             Description = e.Description,
             CreatedAt = e.CreatedOn,
             UpdatedAt = e.UpdatedOn,
+            RoundCount = e.Rounds.Count,
+            TeamCount = e.Teams.Count,
             CategoryCount = e.Rounds.SelectMany(r => r.Categories).Count(),
             QuestionCount = e.Rounds.SelectMany(r => r.Categories).SelectMany(c => c.Questions).Count()
         }).ToList();
@@ -44,6 +47,7 @@ public class EventService : IEventService
             .Include(e => e.Rounds)
                 .ThenInclude(r => r.Categories)
                     .ThenInclude(c => c.Questions)
+            .Include(e => e.Teams)
             .FirstOrDefaultAsync(e => e.Id == id);
 
         if (eventEntity == null)
@@ -56,6 +60,8 @@ public class EventService : IEventService
             Description = eventEntity.Description,
             CreatedAt = eventEntity.CreatedOn,
             UpdatedAt = eventEntity.UpdatedOn,
+            RoundCount = eventEntity.Rounds.Count,
+            TeamCount = eventEntity.Teams.Count,
             CategoryCount = eventEntity.Rounds.SelectMany(r => r.Categories).Count(),
             QuestionCount = eventEntity.Rounds.SelectMany(r => r.Categories).SelectMany(c => c.Questions).Count()
         };
@@ -92,6 +98,8 @@ public class EventService : IEventService
             Description = eventEntity.Description,
             CreatedAt = eventEntity.CreatedOn,
             UpdatedAt = eventEntity.UpdatedOn,
+            RoundCount = 1,
+            TeamCount = 0,
             CategoryCount = 0,
             QuestionCount = 0
         };
@@ -484,6 +492,8 @@ public class EventService : IEventService
             Description = eventEntity.Description,
             CreatedAt = eventEntity.CreatedOn,
             UpdatedAt = eventEntity.UpdatedOn,
+            RoundCount = eventEntity.Rounds.Count,
+            TeamCount = eventEntity.Teams.Count,
             CategoryCount = eventEntity.Rounds.SelectMany(r => r.Categories).Count(),
             QuestionCount = eventEntity.Rounds.SelectMany(r => r.Categories).SelectMany(c => c.Questions).Count()
         };
@@ -642,6 +652,8 @@ public class EventService : IEventService
             Description = clonedEvent.Description,
             CreatedAt = clonedEvent.CreatedOn,
             UpdatedAt = clonedEvent.UpdatedOn,
+            RoundCount = 0,
+            TeamCount = 0,
             CategoryCount = 0,
             QuestionCount = 0
         };

@@ -66,6 +66,8 @@ export interface Event {
   description: string
   createdAt: string
   updatedAt: string
+  roundCount: number
+  teamCount: number
   categoryCount: number
   questionCount: number
 }

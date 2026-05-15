@@ -7,6 +7,8 @@ public class EventDto
     public string Description { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public int RoundCount { get; set; }
+    public int TeamCount { get; set; }
     public int CategoryCount { get; set; }
     public int QuestionCount { get; set; }
 }
