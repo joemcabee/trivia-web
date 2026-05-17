@@ -658,5 +658,53 @@ public class EventService : IEventService
             QuestionCount = 0
         };
     }
-}
 
+    public async Task<List<QuestionSearchResultDto>> SearchQuestionsAsync(string userId, string query, int? excludeEventId, int limit)
+    {
+        query = (query ?? string.Empty).Trim();
+        if (query.Length < 2)
+            return new List<QuestionSearchResultDto>();
+
+        // Guardrail against pathological queries.
+        limit = Math.Clamp(limit, 1, 100);
+
+        var tokens = query
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Take(8)
+            .ToArray();
+
+        if (tokens.Length == 0)
+            return new List<QuestionSearchResultDto>();
+
+        IQueryable<Question> questions = _context.Questions
+            .AsNoTracking()
+            .Where(q => q.Category.Round.Event.UserId == userId);
+
+        if (excludeEventId.HasValue)
+            questions = questions.Where(q => q.Category.Round.EventId != excludeEventId.Value);
+
+        foreach (var token in tokens)
+        {
+            var pattern = $"%{token}%";
+            questions = questions.Where(q =>
+                EF.Functions.ILike(q.QuestionText, pattern) ||
+                EF.Functions.ILike(q.Answer, pattern));
+        }
+
+        return await questions
+            .OrderByDescending(q => q.CreatedOn)
+            .ThenByDescending(q => q.Id)
+            .Select(q => new QuestionSearchResultDto
+            {
+                QuestionId = q.Id,
+                EventId = q.Category.Round.EventId,
+                EventName = q.Category.Round.Event.Name,
+                CategoryId = q.CategoryId,
+                CategoryName = q.Category.Name,
+                QuestionText = q.QuestionText,
+                Answer = q.Answer
+            })
+            .Take(limit)
+            .ToListAsync();
+    }
+}

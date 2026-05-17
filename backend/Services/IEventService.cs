@@ -23,4 +23,5 @@ public interface IEventService
     Task<EventDto?> GetEventWithDetailsAsync(int id, string userId);
     Task<EventDetailsDto?> GetEventDetailsAsync(int id, string userId);
     Task<EventDto> CloneEventAsync(int id, string userId);
+    Task<List<QuestionSearchResultDto>> SearchQuestionsAsync(string userId, string query, int? excludeEventId, int limit);
 }

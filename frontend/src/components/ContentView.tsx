@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { eventApi, EventDetails, Question } from '../services/api'
+import { eventApi, EventDetails, Question, QuestionSearchResult } from '../services/api'
 
 interface ContentViewProps {
   eventId: number
@@ -20,10 +20,47 @@ function ContentView({ eventId }: ContentViewProps) {
   const [questionImageUrl, setQuestionImageUrl] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [editingQuestionId, setEditingQuestionId] = useState<number | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchIncludeCurrentEvent, setSearchIncludeCurrentEvent] = useState(false)
+  const [searchResults, setSearchResults] = useState<QuestionSearchResult[]>([])
+  const [searchLoading, setSearchLoading] = useState(false)
 
   useEffect(() => {
     loadEvent()
   }, [eventId])
+
+  useEffect(() => {
+    if (!showQuestionModal) return
+
+    const q = searchQuery.trim()
+    if (q.length < 2) {
+      setSearchResults([])
+      return
+    }
+
+    let cancelled = false
+    setSearchLoading(true)
+
+    const timeout = setTimeout(async () => {
+      try {
+        const results = await eventApi.searchQuestions(q, {
+          excludeEventId: searchIncludeCurrentEvent ? undefined : eventId,
+          limit: 50,
+        })
+        if (!cancelled) setSearchResults(results)
+      } catch (error) {
+        console.error('Failed to search questions:', error)
+        if (!cancelled) setSearchResults([])
+      } finally {
+        if (!cancelled) setSearchLoading(false)
+      }
+    }, 300)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timeout)
+    }
+  }, [searchQuery, showQuestionModal, eventId, searchIncludeCurrentEvent])
 
   const loadEvent = async () => {
     try {
@@ -120,6 +157,9 @@ function ContentView({ eventId }: ContentViewProps) {
       setAnswer('')
       setQuestionImageUrl(null)
       setEditingQuestionId(null)
+      setSearchQuery('')
+      setSearchIncludeCurrentEvent(false)
+      setSearchResults([])
       setShowQuestionModal(false)
       await loadEvent()
     } catch (error) {
@@ -133,6 +173,9 @@ function ContentView({ eventId }: ContentViewProps) {
     setAnswer(question.answer)
     setQuestionImageUrl(question.imageUrl)
     setEditingQuestionId(question.id)
+    setSearchQuery('')
+    setSearchIncludeCurrentEvent(false)
+    setSearchResults([])
     setShowQuestionModal(true)
   }
 
@@ -294,6 +337,9 @@ function ContentView({ eventId }: ContentViewProps) {
                 setQuestionText('')
                 setAnswer('')
                 setQuestionImageUrl(null)
+                setSearchQuery('')
+                setSearchIncludeCurrentEvent(false)
+                setSearchResults([])
                 setShowQuestionModal(true)
               }}
               className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
@@ -451,6 +497,65 @@ function ContentView({ eventId }: ContentViewProps) {
                   required
                 />
               </div>
+              <div className="mb-4 border-t dark:border-gray-700 pt-4">
+                <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
+                  Search Existing Questions
+                </label>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Type keywords (searches question + answer)"
+                  className="shadow appearance-none border dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                />
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <input
+                      type="checkbox"
+                      checked={searchIncludeCurrentEvent}
+                      onChange={(e) => setSearchIncludeCurrentEvent(e.target.checked)}
+                    />
+                    Include this event
+                  </label>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {searchLoading ? 'Searching…' : `${searchResults.length} result(s)`}
+                  </div>
+                </div>
+
+                {searchQuery.trim().length >= 2 && searchResults.length > 0 && (
+                  <div className="mt-3 max-h-64 overflow-y-auto space-y-2">
+                    {searchResults.map((r) => (
+                      <div
+                        key={r.questionId}
+                        className="border dark:border-gray-700 rounded p-3 bg-gray-50 dark:bg-gray-700/50"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="text-xs text-gray-500 dark:text-gray-300">
+                            {r.eventName} • {r.categoryName}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setQuestionText(r.questionText)
+                              setAnswer(r.answer)
+                            }}
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium shrink-0"
+                            title="Copy question + answer into the form"
+                          >
+                            Use
+                          </button>
+                        </div>
+                        <div className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
+                          {r.questionText}
+                        </div>
+                        <div className="mt-1 text-sm text-gray-700 dark:text-gray-200">
+                          Answer: {r.answer}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="mb-4">
                 <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
                   Image (optional)
@@ -484,6 +589,9 @@ function ContentView({ eventId }: ContentViewProps) {
                     setAnswer('')
                     setQuestionImageUrl(null)
                     setEditingQuestionId(null)
+                    setSearchQuery('')
+                    setSearchIncludeCurrentEvent(false)
+                    setSearchResults([])
                   }}
                   className="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded"
                 >

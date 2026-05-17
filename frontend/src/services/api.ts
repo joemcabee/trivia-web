@@ -110,6 +110,16 @@ export interface Question {
   order: number
 }
 
+export interface QuestionSearchResult {
+  questionId: number
+  eventId: number
+  eventName: string
+  categoryId: number
+  categoryName: string
+  questionText: string
+  answer: string
+}
+
 export interface EventDetails {
   id: number
   name: string
@@ -263,6 +273,20 @@ export const eventApi = {
     })
     return response.data.imageUrl
   },
+
+  searchQuestions: async (
+    query: string,
+    opts?: { excludeEventId?: number; limit?: number }
+  ): Promise<QuestionSearchResult[]> => {
+    const { data } = await api.get<QuestionSearchResult[]>('/events/questions/search', {
+      params: {
+        q: query,
+        excludeEventId: opts?.excludeEventId,
+        limit: opts?.limit ?? 50,
+      },
+    })
+    return data
+  },
 }
 
 
@@ -275,4 +299,3 @@ export const supportApi = {
   },
 }
 export default api
-

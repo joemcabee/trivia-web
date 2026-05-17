@@ -232,4 +232,14 @@ public class EventsController : ControllerBase
             return NotFound();
         }
     }
+
+    [HttpGet("questions/search")]
+    public async Task<ActionResult<List<QuestionSearchResultDto>>> SearchQuestions(
+        [FromQuery] string q,
+        [FromQuery] int? excludeEventId,
+        [FromQuery] int limit = 50)
+    {
+        var results = await _eventService.SearchQuestionsAsync(UserId, q, excludeEventId, limit);
+        return Ok(results);
+    }
 }
