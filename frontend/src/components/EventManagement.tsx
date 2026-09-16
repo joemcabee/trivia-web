@@ -105,47 +105,27 @@ function EventManagement() {
           <p className="text-gray-600 dark:text-gray-400">{event.description}</p>
         </div>
 
-        <div className="mb-6 flex gap-2">
-          <button
-            onClick={() => setSelectedView('content')}
-            className={`px-4 py-2 rounded ${
-              selectedView === 'content'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            Content
-          </button>
-          <button
-            onClick={() => setSelectedView('teams')}
-            className={`px-4 py-2 rounded ${
-              selectedView === 'teams'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            Teams
-          </button>
-          <button
-            onClick={() => setSelectedView('points')}
-            className={`px-4 py-2 rounded ${
-              selectedView === 'points'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            Points
-          </button>
-          <button
-            onClick={() => setSelectedView('scoreboard')}
-            className={`px-4 py-2 rounded ${
-              selectedView === 'scoreboard'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
-            }`}
-          >
-            Scoreboard
-          </button>
+        <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+          <nav className="-mb-px flex gap-6" aria-label="Event views">
+            {([
+              { key: 'content', label: 'Content' },
+              { key: 'teams', label: 'Teams' },
+              { key: 'points', label: 'Points' },
+              { key: 'scoreboard', label: 'Scoreboard' },
+            ] as const).map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setSelectedView(t.key)}
+                className={`whitespace-nowrap border-b-2 px-1 py-3 text-sm font-medium transition-colors ${
+                  selectedView === t.key
+                    ? 'border-blue-600 text-blue-700 dark:text-blue-300'
+                    : 'border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300 dark:text-gray-300 dark:hover:text-white dark:hover:border-gray-600'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
         </div>
 
         {selectedView === 'content' && (
@@ -216,4 +196,3 @@ function EventManagement() {
 }
 
 export default EventManagement
-

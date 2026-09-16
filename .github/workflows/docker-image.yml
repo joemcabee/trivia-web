@@ -43,3 +43,4 @@ jobs:
         tags: ${{ vars.DOCKER_SERVER }}/slacker-trivia-web-fe:latest
         build-args: |
           VITE_API_URL=https://trivia-api.slackersoftware.com/api
+          VITE_OIDC_AUTHORITY=https://auth.slackersoftware.com/realms/slacker-prd

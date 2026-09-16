@@ -1,3 +1,7 @@
+using System.Globalization;
+using CsvHelper;
+using CsvHelper.Configuration;
+using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using TriviaApp.API.Data;
 using TriviaApp.API.DTOs;
@@ -15,6 +19,26 @@ public class EventService : IEventService
     }
 
     private static string NormalizeTeamName(string name) => name.Trim();
+    private static string NormalizeName(string name) => (name ?? string.Empty).Trim();
+    private static string NormalizeRoundName(string value)
+    {
+        var trimmed = NormalizeName(value);
+        if (string.IsNullOrWhiteSpace(trimmed))
+            return trimmed;
+
+        if (trimmed.StartsWith("Round ", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(trimmed, "Round", StringComparison.OrdinalIgnoreCase))
+        {
+            return trimmed;
+        }
+
+        if (int.TryParse(trimmed, out var roundNumber) && roundNumber > 0)
+            return $"Round {roundNumber}";
+
+        return trimmed;
+    }
+
+    private sealed record ImportRow(int RowNumber, string Round, string Category, string Question, string Answer);
 
     public async Task<List<EventDto>> GetAllEventsAsync(string userId)
     {
@@ -657,6 +681,337 @@ public class EventService : IEventService
             CategoryCount = 0,
             QuestionCount = 0
         };
+    }
+
+    public async Task<ImportQuestionsResultDto> ImportQuestionsAsync(
+        int eventId,
+        Stream fileStream,
+        string fileName,
+        bool firstRowHasHeaders,
+        string userId)
+    {
+        var eventEntity = await _context.Events
+            .Where(e => e.Id == eventId && e.UserId == userId)
+            .Include(e => e.Rounds)
+                .ThenInclude(r => r.Categories)
+            .FirstOrDefaultAsync();
+
+        if (eventEntity == null)
+            throw new ArgumentException("Event not found or access denied.");
+
+        var rows = await ReadImportRowsAsync(fileStream, fileName, firstRowHasHeaders);
+
+        var result = new ImportQuestionsResultDto
+        {
+            TotalRows = rows.Count
+        };
+
+        var roundComparer = StringComparer.OrdinalIgnoreCase;
+        var roundByName = eventEntity.Rounds.ToDictionary(r => NormalizeName(r.Name), r => r, roundComparer);
+
+        var maxRoundOrder = eventEntity.Rounds.Select(r => r.Order).DefaultIfEmpty(0).Max();
+
+        // Existing category lookup keyed by (roundId, categoryName)
+        var categoryByRoundAndName = new Dictionary<(int RoundId, string CategoryName), Category>();
+        foreach (var round in eventEntity.Rounds)
+        {
+            foreach (var category in round.Categories)
+            {
+                categoryByRoundAndName[(round.Id, NormalizeName(category.Name))] = category;
+            }
+        }
+
+        var existingCategoryIds = eventEntity.Rounds.SelectMany(r => r.Categories).Select(c => c.Id).ToList();
+        var maxQuestionOrderByCategoryId = existingCategoryIds.Count == 0
+            ? new Dictionary<int, int>()
+            : await _context.Questions
+                .Where(q => existingCategoryIds.Contains(q.CategoryId))
+                .GroupBy(q => q.CategoryId)
+                .Select(g => new { CategoryId = g.Key, MaxOrder = g.Max(q => q.Order) })
+                .ToDictionaryAsync(x => x.CategoryId, x => x.MaxOrder);
+
+        // Track orders for new categories that don't have IDs yet.
+        var maxQuestionOrderByCategoryEntity = new Dictionary<Category, int>();
+
+        foreach (var row in rows)
+        {
+            var roundName = NormalizeRoundName(row.Round);
+            var categoryName = NormalizeName(row.Category);
+            var questionText = NormalizeName(row.Question);
+            var answerText = NormalizeName(row.Answer);
+
+            if (string.IsNullOrWhiteSpace(roundName) ||
+                string.IsNullOrWhiteSpace(categoryName) ||
+                string.IsNullOrWhiteSpace(questionText) ||
+                string.IsNullOrWhiteSpace(answerText))
+            {
+                result.SkippedRows++;
+                result.Errors.Add(new ImportRowErrorDto
+                {
+                    RowNumber = row.RowNumber,
+                    Message = "Round, Category, Question, and Answer are all required."
+                });
+                continue;
+            }
+
+            if (!roundByName.TryGetValue(roundName, out var roundEntity))
+            {
+                maxRoundOrder += 1;
+                roundEntity = new Round
+                {
+                    Name = roundName,
+                    EventId = eventEntity.Id,
+                    Order = maxRoundOrder,
+                    CreatedOn = DateTime.UtcNow
+                };
+
+                _context.Rounds.Add(roundEntity);
+                eventEntity.Rounds.Add(roundEntity);
+                roundByName[roundName] = roundEntity;
+                result.CreatedRounds++;
+            }
+
+            Category categoryEntity;
+            if (roundEntity.Id != 0)
+            {
+                if (!categoryByRoundAndName.TryGetValue((roundEntity.Id, categoryName), out categoryEntity!))
+                {
+                    var maxCategoryOrder = roundEntity.Categories.Select(c => c.Order).DefaultIfEmpty(0).Max();
+                    categoryEntity = new Category
+                    {
+                        Name = categoryName,
+                        RoundId = roundEntity.Id,
+                        Order = maxCategoryOrder + 1,
+                        CreatedOn = DateTime.UtcNow
+                    };
+                    _context.Categories.Add(categoryEntity);
+                    roundEntity.Categories.Add(categoryEntity);
+                    categoryByRoundAndName[(roundEntity.Id, categoryName)] = categoryEntity;
+                    result.CreatedCategories++;
+                }
+            }
+            else
+            {
+                // Round not saved yet; match on name within the in-memory collection.
+                categoryEntity = roundEntity.Categories.FirstOrDefault(c => roundComparer.Equals(NormalizeName(c.Name), categoryName))
+                    ?? CreateNewCategoryForUnsavedRound(roundEntity, categoryName, result);
+            }
+
+            var nextQuestionOrder = GetNextQuestionOrder(categoryEntity, maxQuestionOrderByCategoryId, maxQuestionOrderByCategoryEntity);
+
+            var questionEntity = new Question
+            {
+                QuestionText = questionText,
+                Answer = answerText,
+                Category = categoryEntity,
+                Order = nextQuestionOrder,
+                CreatedOn = DateTime.UtcNow
+            };
+
+            _context.Questions.Add(questionEntity);
+            categoryEntity.Questions.Add(questionEntity);
+            result.ImportedQuestions++;
+        }
+
+        await _context.SaveChangesAsync();
+        return result;
+    }
+
+    private static int GetNextQuestionOrder(
+        Category category,
+        Dictionary<int, int> maxOrderByCategoryId,
+        Dictionary<Category, int> maxOrderByCategoryEntity)
+    {
+        if (category.Id != 0)
+        {
+            var current = maxOrderByCategoryId.TryGetValue(category.Id, out var max) ? max : 0;
+            current += 1;
+            maxOrderByCategoryId[category.Id] = current;
+            return current;
+        }
+
+        var currentEntity = maxOrderByCategoryEntity.TryGetValue(category, out var maxEntity) ? maxEntity : 0;
+        currentEntity += 1;
+        maxOrderByCategoryEntity[category] = currentEntity;
+        return currentEntity;
+    }
+
+    private static Category CreateNewCategoryForUnsavedRound(Round roundEntity, string categoryName, ImportQuestionsResultDto result)
+    {
+        var maxCategoryOrder = roundEntity.Categories.Select(c => c.Order).DefaultIfEmpty(0).Max();
+        var category = new Category
+        {
+            Name = categoryName,
+            Order = maxCategoryOrder + 1,
+            CreatedOn = DateTime.UtcNow,
+            Round = roundEntity
+        };
+        roundEntity.Categories.Add(category);
+        result.CreatedCategories++;
+        return category;
+    }
+
+    private static async Task<List<ImportRow>> ReadImportRowsAsync(Stream fileStream, string fileName, bool firstRowHasHeaders)
+    {
+        var ext = Path.GetExtension(fileName ?? string.Empty).ToLowerInvariant();
+        if (ext == ".csv")
+            return await ReadCsvRowsAsync(fileStream, firstRowHasHeaders);
+
+        if (ext == ".xlsx")
+            return ReadXlsxRows(fileStream, firstRowHasHeaders);
+
+        throw new InvalidOperationException("Unsupported file type. Please upload a .csv or .xlsx file.");
+    }
+
+    private static async Task<List<ImportRow>> ReadCsvRowsAsync(Stream fileStream, bool firstRowHasHeaders)
+    {
+        var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+        {
+            HasHeaderRecord = firstRowHasHeaders,
+            TrimOptions = TrimOptions.Trim,
+            IgnoreBlankLines = true,
+            BadDataFound = null,
+            MissingFieldFound = null
+        };
+
+        using var reader = new StreamReader(fileStream, leaveOpen: true);
+        using var csv = new CsvReader(reader, config);
+
+        var rows = new List<ImportRow>();
+        var rowNumber = 0;
+
+        if (firstRowHasHeaders)
+        {
+            if (!await csv.ReadAsync())
+                return rows;
+            csv.ReadHeader();
+
+            var headers = csv.HeaderRecord ?? Array.Empty<string>();
+            var required = new[] { "Round", "Category", "Question", "Answer" };
+            foreach (var req in required)
+            {
+                if (!headers.Any(h => string.Equals(h?.Trim(), req, StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidOperationException($"CSV header row must include a '{req}' column.");
+            }
+        }
+
+        while (await csv.ReadAsync())
+        {
+            rowNumber++;
+
+            string round;
+            string category;
+            string question;
+            string answer;
+
+            if (firstRowHasHeaders)
+            {
+                round = GetCsvFieldCaseInsensitive(csv, "Round");
+                category = GetCsvFieldCaseInsensitive(csv, "Category");
+                question = GetCsvFieldCaseInsensitive(csv, "Question");
+                answer = GetCsvFieldCaseInsensitive(csv, "Answer");
+            }
+            else
+            {
+                round = csv.GetField(0) ?? string.Empty;
+                category = csv.GetField(1) ?? string.Empty;
+                question = csv.GetField(2) ?? string.Empty;
+                answer = csv.GetField(3) ?? string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(round) &&
+                string.IsNullOrWhiteSpace(category) &&
+                string.IsNullOrWhiteSpace(question) &&
+                string.IsNullOrWhiteSpace(answer))
+            {
+                continue;
+            }
+
+            rows.Add(new ImportRow(
+                RowNumber: firstRowHasHeaders ? rowNumber + 1 : rowNumber,
+                Round: round,
+                Category: category,
+                Question: question,
+                Answer: answer));
+        }
+
+        return rows;
+    }
+
+    private static string GetCsvFieldCaseInsensitive(CsvReader csv, string name)
+    {
+        var headers = csv.HeaderRecord ?? Array.Empty<string>();
+        for (var i = 0; i < headers.Length; i++)
+        {
+            if (string.Equals(headers[i]?.Trim(), name, StringComparison.OrdinalIgnoreCase))
+                return csv.GetField(i) ?? string.Empty;
+        }
+        return string.Empty;
+    }
+
+    private static List<ImportRow> ReadXlsxRows(Stream fileStream, bool firstRowHasHeaders)
+    {
+        using var workbook = new XLWorkbook(fileStream);
+        var ws = workbook.Worksheets.FirstOrDefault();
+        if (ws == null)
+            return new List<ImportRow>();
+
+        var lastRow = ws.LastRowUsed()?.RowNumber() ?? 0;
+        if (lastRow == 0)
+            return new List<ImportRow>();
+
+        int colRound = 1, colCategory = 2, colQuestion = 3, colAnswer = 4;
+        var startRow = 1;
+
+        if (firstRowHasHeaders)
+        {
+            startRow = 2;
+            var headerRow = ws.Row(1);
+
+            colRound = FindHeaderColumn(headerRow, "Round") ?? throw new InvalidOperationException("Spreadsheet header row must include a 'Round' column.");
+            colCategory = FindHeaderColumn(headerRow, "Category") ?? throw new InvalidOperationException("Spreadsheet header row must include a 'Category' column.");
+            colQuestion = FindHeaderColumn(headerRow, "Question") ?? throw new InvalidOperationException("Spreadsheet header row must include a 'Question' column.");
+            colAnswer = FindHeaderColumn(headerRow, "Answer") ?? throw new InvalidOperationException("Spreadsheet header row must include an 'Answer' column.");
+        }
+
+        var rows = new List<ImportRow>();
+        for (var r = startRow; r <= lastRow; r++)
+        {
+            var round = ws.Cell(r, colRound).GetString();
+            var category = ws.Cell(r, colCategory).GetString();
+            var question = ws.Cell(r, colQuestion).GetString();
+            var answer = ws.Cell(r, colAnswer).GetString();
+
+            if (string.IsNullOrWhiteSpace(round) &&
+                string.IsNullOrWhiteSpace(category) &&
+                string.IsNullOrWhiteSpace(question) &&
+                string.IsNullOrWhiteSpace(answer))
+            {
+                continue;
+            }
+
+            rows.Add(new ImportRow(
+                RowNumber: r,
+                Round: round,
+                Category: category,
+                Question: question,
+                Answer: answer));
+        }
+
+        return rows;
+    }
+
+    private static int? FindHeaderColumn(IXLRow headerRow, string headerName)
+    {
+        var lastCell = headerRow.LastCellUsed()?.Address.ColumnNumber ?? 0;
+        for (var c = 1; c <= lastCell; c++)
+        {
+            var val = headerRow.Cell(c).GetString();
+            if (string.Equals(val?.Trim(), headerName, StringComparison.OrdinalIgnoreCase))
+                return c;
+        }
+
+        return null;
     }
 
     public async Task<List<QuestionSearchResultDto>> SearchQuestionsAsync(string userId, string query, int? excludeEventId, int limit)

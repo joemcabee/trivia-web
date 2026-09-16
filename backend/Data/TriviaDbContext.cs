@@ -31,7 +31,15 @@ public class TriviaDbContext : DbContext
             entity.Property(e => e.Description).IsRequired().HasColumnName("description");
             entity.Property(e => e.CreatedOn).HasColumnName("created_on");
             entity.Property(e => e.UpdatedOn).HasColumnName("updated_on");
-            entity.Property(e => e.UserId).IsRequired().HasColumnName("user_id");
+            // Shared-registry account UUID. C# stays string so all ownership
+            // filters keep working; mapped to the uuid column via conversion.
+            entity.Property(e => e.UserId)
+                .HasConversion(
+                    accountId => Guid.Parse(accountId),
+                    accountId => accountId.ToString())
+                .HasColumnType("uuid")
+                .IsRequired()
+                .HasColumnName("user_id");
             entity.HasMany(e => e.Rounds)
                   .WithOne(r => r.Event)
                   .HasForeignKey(r => r.EventId)

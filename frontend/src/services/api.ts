@@ -1,59 +1,52 @@
 import axios from 'axios'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
-const TOKEN_KEY = 'trivia_app_token'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
 })
 
-let onUnauthorized: (() => void) | null = null
+// Token injected at call-time so it is always fresh.
+// Call setAuthToken() when the OIDC user (and token) changes.
+let _accessToken: string | null = null
 
-export function setAuthUnauthorizedHandler(handler: () => void) {
-  onUnauthorized = handler
+export function setAuthToken(token: string | null): void {
+  _accessToken = token
 }
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(TOKEN_KEY)
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  if (_accessToken) {
+    config.headers.Authorization = `Bearer ${_accessToken}`
+  }
   return config
 })
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) onUnauthorized?.()
+    if (error.response?.status === 401) {
+      // Do not reload or redirect here: a full navigation interrupts the
+      // OIDC redirect/login flow and can trap the app in a reload loop.
+      // Clear the expired token instead so the auth provider can resolve
+      // the user state naturally (silent renew or a fresh sign-in).
+      setAuthToken(null)
+    }
     return Promise.reject(error)
   }
 )
 
-export interface LoginResponse {
-  token: string
-  userName: string
-  userId: string
+// Image paths from the API are relative (e.g. "/images/<file>"); resolve
+// them against the configured API origin instead of a hardcoded host.
+export function resolveImageUrl(path: string | null | undefined): string | null {
+  if (!path) return null
+  if (/^https?:\/\//i.test(path)) return path
+  return `${new URL(API_BASE_URL).origin}${path}`
 }
 
 export const authApi = {
-  register: async (email: string, password: string): Promise<LoginResponse> => {
-    const { data } = await api.post<LoginResponse>('/auth/register', {
-      email: email.trim(),
-      password,
-    })
-    return data
-  },
-
-  login: async (email: string, password: string): Promise<LoginResponse> => {
-    const { data } = await api.post<LoginResponse>('/auth/login', {
-      email: email.trim(),
-      password,
-    })
-    return data
-  },
-
   getMe: async (): Promise<{ userId: string; userName: string }> => {
     const { data } = await api.get<{ userId: string; userName: string }>('/auth/me')
     return data
@@ -146,6 +139,22 @@ export interface PresentationData {
   eventId: number
   eventName: string
   slides: PresentationSlide[]
+}
+
+export type PresentationMode = 'QuestionsOnly' | 'QuestionAnswer'
+
+export interface ImportRowError {
+  rowNumber: number
+  message: string
+}
+
+export interface ImportQuestionsResult {
+  totalRows: number
+  importedQuestions: number
+  createdRounds: number
+  createdCategories: number
+  skippedRows: number
+  errors: ImportRowError[]
 }
 
 export const eventApi = {
@@ -263,6 +272,13 @@ export const eventApi = {
     return response.data
   },
 
+  getRoundPresentationData: async (eventId: number, roundId: number, mode: PresentationMode): Promise<PresentationData> => {
+    const response = await api.get<PresentationData>(`/presentation/event/${eventId}/round/${roundId}`, {
+      params: { mode },
+    })
+    return response.data
+  },
+
   uploadImage: async (file: File): Promise<string> => {
     const formData = new FormData()
     formData.append('file', file)
@@ -272,6 +288,23 @@ export const eventApi = {
       },
     })
     return response.data.imageUrl
+  },
+
+  importQuestions: async (
+    eventId: number,
+    file: File,
+    firstRowHasHeaders: boolean
+  ): Promise<ImportQuestionsResult> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('firstRowHasHeaders', String(firstRowHasHeaders))
+
+    const response = await api.post<ImportQuestionsResult>(`/events/${eventId}/import-questions`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
   },
 
   searchQuestions: async (

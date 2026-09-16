@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { eventApi, EventDetails, Question, QuestionSearchResult } from '../services/api'
+import { eventApi, EventDetails, ImportQuestionsResult, Question, QuestionSearchResult, resolveImageUrl } from '../services/api'
 
 interface ContentViewProps {
   eventId: number
@@ -24,6 +24,21 @@ function ContentView({ eventId }: ContentViewProps) {
   const [searchIncludeCurrentEvent, setSearchIncludeCurrentEvent] = useState(false)
   const [searchResults, setSearchResults] = useState<QuestionSearchResult[]>([])
   const [searchLoading, setSearchLoading] = useState(false)
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [importFile, setImportFile] = useState<File | null>(null)
+  const [importFirstRowHasHeaders, setImportFirstRowHasHeaders] = useState(true)
+  const [importingQuestions, setImportingQuestions] = useState(false)
+  const [importResult, setImportResult] = useState<ImportQuestionsResult | null>(null)
+  const [deleteModal, setDeleteModal] = useState<
+    | null
+    | {
+        type: 'round' | 'category'
+        id: number
+        title: string
+        message: string
+      }
+  >(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     loadEvent()
@@ -196,34 +211,66 @@ function ContentView({ eventId }: ContentViewProps) {
 
   const handleDeleteRound = async (roundId: number, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!confirm('Are you sure you want to delete this round? This will also delete all categories and questions in this round.')) {
-      return
-    }
-
-    try {
-      await eventApi.deleteRound(roundId)
-      setSelectedRound(null)
-      setSelectedCategory(null)
-      await loadEvent()
-    } catch (error) {
-      console.error('Failed to delete round:', error)
-      alert('Failed to delete round')
-    }
+    const roundName = event?.rounds.find((r) => r.id === roundId)?.name ?? 'this round'
+    setDeleteModal({
+      type: 'round',
+      id: roundId,
+      title: `Delete ${roundName}?`,
+      message: 'This will also delete all categories and questions in this round.',
+    })
   }
 
   const handleDeleteCategory = async (categoryId: number, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!confirm('Are you sure you want to delete this category? This will also delete all questions in this category.')) {
-      return
-    }
+    const categoryName =
+      event?.rounds
+        .flatMap((r) => r.categories)
+        .find((c) => c.id === categoryId)?.name ?? 'this category'
+    setDeleteModal({
+      type: 'category',
+      id: categoryId,
+      title: `Delete ${categoryName}?`,
+      message: 'This will also delete all questions in this category.',
+    })
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteModal) return
 
     try {
-      await eventApi.deleteCategory(categoryId)
-      setSelectedCategory(null)
+      setDeleting(true)
+      if (deleteModal.type === 'round') {
+        await eventApi.deleteRound(deleteModal.id)
+        setSelectedRound(null)
+        setSelectedCategory(null)
+      } else {
+        await eventApi.deleteCategory(deleteModal.id)
+        setSelectedCategory(null)
+      }
+      setDeleteModal(null)
       await loadEvent()
     } catch (error) {
-      console.error('Failed to delete category:', error)
-      alert('Failed to delete category')
+      console.error('Failed to delete:', error)
+      alert('Failed to delete')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const handleImportQuestions = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!importFile) return
+
+    try {
+      setImportingQuestions(true)
+      const res = await eventApi.importQuestions(eventId, importFile, importFirstRowHasHeaders)
+      setImportResult(res)
+      await loadEvent()
+    } catch (error: any) {
+      console.error('Failed to import questions:', error)
+      alert(error?.response?.data ?? 'Failed to import questions')
+    } finally {
+      setImportingQuestions(false)
     }
   }
 
@@ -251,12 +298,25 @@ function ContentView({ eventId }: ContentViewProps) {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-semibold">Rounds</h2>
-          <button
-            onClick={() => setShowRoundModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Add Round
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setImportResult(null)
+                setImportFile(null)
+                setImportFirstRowHasHeaders(true)
+                setShowImportModal(true)
+              }}
+              className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded shadow-sm"
+            >
+              Import Q/A
+            </button>
+            <button
+              onClick={() => setShowRoundModal(true)}
+              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-bold py-2 px-4 rounded shadow-sm"
+            >
+              Add Round
+            </button>
+          </div>
         </div>
         <div className="flex gap-2 flex-wrap">
           {event.rounds.map((round) => (
@@ -373,7 +433,7 @@ function ContentView({ eventId }: ContentViewProps) {
                 <p className="text-gray-600 dark:text-gray-400">Answer: {question.answer}</p>
                 {question.imageUrl ? (
                   <img
-                    src={`http://localhost:5000${question.imageUrl}`}
+                    src={resolveImageUrl(question.imageUrl) ?? ''}
                     alt="Question"
                     className="mt-2 max-w-xs rounded shadow dark:shadow-gray-900"
                   />
@@ -574,7 +634,7 @@ function ContentView({ eventId }: ContentViewProps) {
                 {uploadingImage && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Uploading...</p>}
                 {questionImageUrl && (
                   <img
-                    src={`http://localhost:5000${questionImageUrl}`}
+                    src={resolveImageUrl(questionImageUrl) ?? ''}
                     alt="Preview"
                     className="mt-2 max-w-xs rounded shadow dark:shadow-gray-900"
                   />
@@ -606,6 +666,142 @@ function ContentView({ eventId }: ContentViewProps) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full mx-4">
+            <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
+              {importResult ? 'Import Summary' : 'Import Questions'}
+            </h2>
+
+            {importResult ? (
+              <>
+                <div className="mb-4 border dark:border-gray-700 rounded p-3 bg-gray-50 dark:bg-gray-700/50 text-sm">
+                  <div>Imported questions: <span className="font-semibold">{importResult.importedQuestions}</span></div>
+                  <div>Created rounds: <span className="font-semibold">{importResult.createdRounds}</span></div>
+                  <div>Created categories: <span className="font-semibold">{importResult.createdCategories}</span></div>
+                  <div>Skipped rows: <span className="font-semibold">{importResult.skippedRows}</span></div>
+                  {importResult.errors.length > 0 && (
+                    <div className="mt-2">
+                      <div className="font-semibold text-red-600 dark:text-red-400">Row errors:</div>
+                      <div className="max-h-64 overflow-y-auto mt-1 space-y-1">
+                        {importResult.errors.slice(0, 50).map((err) => (
+                          <div key={`${err.rowNumber}-${err.message}`} className="text-red-700 dark:text-red-300">
+                            Row {err.rowNumber}: {err.message}
+                          </div>
+                        ))}
+                        {importResult.errors.length > 50 && (
+                          <div className="text-gray-600 dark:text-gray-300">
+                            Showing first 50 of {importResult.errors.length} errors.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowImportModal(false)
+                      setImportFile(null)
+                      setImportResult(null)
+                      setImportFirstRowHasHeaders(true)
+                    }}
+                    className="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded"
+                  >
+                    Close
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+                  Upload a <span className="font-semibold">.csv</span> or <span className="font-semibold">.xlsx</span> with columns:
+                  <span className="font-mono"> Round, Category, Question, Answer</span>.
+                </p>
+
+                <form onSubmit={handleImportQuestions}>
+                  <div className="mb-4">
+                    <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
+                      File
+                    </label>
+                    <input
+                      type="file"
+                      accept=".csv,.xlsx"
+                      onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+                      className="shadow appearance-none border dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                      required
+                    />
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                      <input
+                        type="checkbox"
+                        checked={importFirstRowHasHeaders}
+                        onChange={(e) => setImportFirstRowHasHeaders(e.target.checked)}
+                      />
+                      First row has column headers
+                    </label>
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowImportModal(false)
+                        setImportFile(null)
+                        setImportResult(null)
+                        setImportFirstRowHasHeaders(true)
+                      }}
+                      className="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded"
+                    >
+                      Close
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!importFile || importingQuestions}
+                      className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded shadow-sm disabled:bg-gray-400 disabled:dark:bg-gray-600"
+                    >
+                      {importingQuestions ? 'Importing...' : 'Import'}
+                    </button>
+                  </div>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {deleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">{deleteModal.title}</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">{deleteModal.message}</p>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setDeleteModal(null)}
+                className="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={confirmDelete}
+                className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white font-bold py-2 px-4 rounded shadow-sm disabled:opacity-60"
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
           </div>
         </div>
       )}

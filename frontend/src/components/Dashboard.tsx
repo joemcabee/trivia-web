@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from 'react-oidc-context'
 import { eventApi, Event } from '../services/api'
 
 function Dashboard() {
@@ -9,7 +9,8 @@ function Dashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [eventName, setEventName] = useState('')
   const [eventDescription, setEventDescription] = useState('')
-  const { user, logout } = useAuth()
+  const auth = useAuth()
+  const userName = auth.user?.profile?.preferred_username ?? ''
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -85,8 +86,8 @@ function Dashboard() {
         <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white">Trivia Events</h1>
           <div className="flex items-center gap-4">
-            {user && (
-              <span className="text-gray-600 dark:text-gray-400 text-sm">Signed in as {user.userName}</span>
+            {userName && (
+              <span className="text-gray-600 dark:text-gray-400 text-sm">Signed in as {userName}</span>
             )}
             <button
               onClick={() => setShowCreateModal(true)}
@@ -95,7 +96,7 @@ function Dashboard() {
               Create Event
             </button>
             <button
-              onClick={() => logout()}
+              onClick={() => auth.signoutRedirect()}
               className="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg"
             >
               Log out

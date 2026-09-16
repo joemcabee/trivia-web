@@ -233,6 +233,31 @@ public class EventsController : ControllerBase
         }
     }
 
+    [HttpPost("{id}/import-questions")]
+    public async Task<ActionResult<ImportQuestionsResultDto>> ImportQuestions(
+        int id,
+        [FromForm] IFormFile file,
+        [FromForm] bool firstRowHasHeaders = true)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("A CSV or XLSX file is required.");
+
+        try
+        {
+            await using var stream = file.OpenReadStream();
+            var result = await _eventService.ImportQuestionsAsync(id, stream, file.FileName, firstRowHasHeaders, UserId);
+            return Ok(result);
+        }
+        catch (ArgumentException)
+        {
+            return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
     [HttpGet("questions/search")]
     public async Task<ActionResult<List<QuestionSearchResultDto>>> SearchQuestions(
         [FromQuery] string q,

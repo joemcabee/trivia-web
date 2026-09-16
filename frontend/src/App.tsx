@@ -1,37 +1,51 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
-import { setAuthUnauthorizedHandler, supportApi } from './services/api'
+import { useAuth } from 'react-oidc-context'
+import { setAuthToken, supportApi } from './services/api'
 import Dashboard from './components/Dashboard'
 import EventManagement from './components/EventManagement'
 import Presentation from './components/Presentation'
-import Login from './components/Login'
-import SignUp from './components/SignUp'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { token, isLoading } = useAuth()
-  if (isLoading) {
+  const auth = useAuth()
+
+  useEffect(() => {
+    if (!auth.isLoading && !auth.isAuthenticated && !auth.error) {
+      void auth.signinRedirect()
+    }
+  }, [auth])
+
+  if (auth.isLoading || (!auth.isAuthenticated && !auth.error)) {
     return (
       <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-xl text-gray-900 dark:text-white">Loading...</div>
       </div>
     )
   }
-  if (!token) return <Navigate to="/login" replace />
+
+  if (auth.error) {
+    return (
+      <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex items-center justify-center px-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 max-w-md w-full text-center">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Sign-in failed</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-sm mb-6">{auth.error.message}</p>
+          <button
+            onClick={() => auth.signinRedirect()}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return <>{children}</>
 }
 
 function AppRoutes() {
-  const { logout } = useAuth()
-
-  useEffect(() => {
-    setAuthUnauthorizedHandler(() => logout())
-  }, [logout])
-
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<SignUp />} />
       <Route
         path="/"
         element={
@@ -62,7 +76,7 @@ function AppRoutes() {
 }
 
 function AppContent() {
-  const { token } = useAuth()
+  const auth = useAuth()
   const location = useLocation()
   const hideFooter = /^\/event\/[^/]+\/present$/.test(location.pathname)
   const [showSupportModal, setShowSupportModal] = useState(false)
@@ -70,6 +84,11 @@ function AppContent() {
   const [isSubmittingSupport, setIsSubmittingSupport] = useState(false)
   const [supportError, setSupportError] = useState<string | null>(null)
   const [showSupportSuccessToast, setShowSupportSuccessToast] = useState(false)
+
+  // Keep the API client token in sync with the OIDC session.
+  useEffect(() => {
+    setAuthToken(auth.user?.access_token ?? null)
+  }, [auth.user])
 
   const openSupportModal = () => {
     setSupportMessage('')
@@ -129,7 +148,7 @@ function AppContent() {
             >
               Privacy Policy
             </a>
-            {token && (
+            {auth.isAuthenticated && (
               <>
                 |
                 <button
@@ -199,9 +218,7 @@ function AppContent() {
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <AppContent />
     </Router>
   )
 }

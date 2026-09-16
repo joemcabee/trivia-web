@@ -19,6 +19,12 @@ public class PresentationController : ControllerBase
         _context = context;
     }
 
+    public enum PresentationMode
+    {
+        QuestionsOnly,
+        QuestionAnswer
+    }
+
     [HttpGet("event/{eventId}")]
     public async Task<ActionResult<PresentationDataDto>> GetPresentationData(int eventId)
     {
@@ -84,6 +90,73 @@ public class PresentationController : ControllerBase
             Slides = slides
         });
     }
+
+    [HttpGet("event/{eventId}/round/{roundId}")]
+    public async Task<ActionResult<PresentationDataDto>> GetRoundPresentationData(
+        int eventId,
+        int roundId,
+        [FromQuery] PresentationMode mode = PresentationMode.QuestionsOnly)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        var eventEntity = await _context.Events
+            .Where(e => e.Id == eventId && e.UserId == userId)
+            .Include(e => e.Rounds)
+                .ThenInclude(r => r.Categories)
+                    .ThenInclude(c => c.Questions)
+            .FirstOrDefaultAsync();
+
+        if (eventEntity == null)
+            return NotFound();
+
+        var round = eventEntity.Rounds.FirstOrDefault(r => r.Id == roundId);
+        if (round == null)
+            return NotFound();
+
+        var slides = new List<PresentationSlideDto>();
+
+        foreach (var category in round.Categories.OrderBy(c => c.Order))
+        {
+            var questionNumber = 1;
+            foreach (var question in category.Questions.OrderBy(q => q.Order))
+            {
+                slides.Add(new PresentationSlideDto
+                {
+                    Type = "question",
+                    RoundName = round.Name,
+                    CategoryName = category.Name,
+                    QuestionText = question.QuestionText,
+                    Answer = null,
+                    ImageUrl = question.ImageUrl,
+                    QuestionId = question.Id,
+                    QuestionNumber = questionNumber
+                });
+
+                if (mode == PresentationMode.QuestionAnswer)
+                {
+                    slides.Add(new PresentationSlideDto
+                    {
+                        Type = "answer",
+                        RoundName = round.Name,
+                        CategoryName = category.Name,
+                        QuestionText = question.QuestionText,
+                        Answer = question.Answer,
+                        ImageUrl = question.ImageUrl,
+                        QuestionId = question.Id,
+                        QuestionNumber = questionNumber
+                    });
+                }
+
+                questionNumber++;
+            }
+        }
+
+        return Ok(new PresentationDataDto
+        {
+            EventId = eventEntity.Id,
+            EventName = eventEntity.Name,
+            Slides = slides
+        });
+    }
 }
 
 public class PresentationDataDto
@@ -104,4 +177,3 @@ public class PresentationSlideDto
     public int QuestionId { get; set; }
     public int QuestionNumber { get; set; }
 }
-
