@@ -1,21 +1,18 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from 'react-oidc-context'
 import { setAuthToken, supportApi } from './services/api'
+import { setReturnTo, takeReturnTo } from './returnTo'
 import Dashboard from './components/Dashboard'
 import EventManagement from './components/EventManagement'
 import Presentation from './components/Presentation'
+import Landing from './components/Landing'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const auth = useAuth()
+  const location = useLocation()
 
-  useEffect(() => {
-    if (!auth.isLoading && !auth.isAuthenticated && !auth.error) {
-      void auth.signinRedirect()
-    }
-  }, [auth])
-
-  if (auth.isLoading || (!auth.isAuthenticated && !auth.error)) {
+  if (auth.isLoading) {
     return (
       <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-xl text-gray-900 dark:text-white">Loading...</div>
@@ -40,14 +37,22 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     )
   }
 
+  if (!auth.isAuthenticated) {
+    // Public landing page explains the app and offers Log in. Stash the
+    // attempted URL so it can be restored after the Keycloak round-trip.
+    setReturnTo(location.pathname + location.search)
+    return <Navigate to="/" replace />
+  }
+
   return <>{children}</>
 }
 
 function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<Landing />} />
       <Route
-        path="/"
+        path="/events"
         element={
           <ProtectedRoute>
             <Dashboard />
@@ -78,6 +83,7 @@ function AppRoutes() {
 function AppContent() {
   const auth = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
   const hideFooter = /^\/event\/[^/]+\/present$/.test(location.pathname)
   const [showSupportModal, setShowSupportModal] = useState(false)
   const [supportMessage, setSupportMessage] = useState('')
@@ -89,6 +95,15 @@ function AppContent() {
   useEffect(() => {
     setAuthToken(auth.user?.access_token ?? null)
   }, [auth.user])
+
+  // After returning from Keycloak, restore the deep link (if any) stashed
+  // by ProtectedRoute. Runs once per authenticated landing on "/".
+  useEffect(() => {
+    if (!auth.isLoading && auth.isAuthenticated && location.pathname === '/') {
+      const returnTo = takeReturnTo()
+      if (returnTo) navigate(returnTo, { replace: true })
+    }
+  }, [auth.isLoading, auth.isAuthenticated, location.pathname, navigate])
 
   const openSupportModal = () => {
     setSupportMessage('')

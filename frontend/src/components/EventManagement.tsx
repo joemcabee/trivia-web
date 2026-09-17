@@ -78,7 +78,7 @@ function EventManagement() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-6 flex justify-between items-center">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/events')}
             className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
           >
             ← Back to Dashboard

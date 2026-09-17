@@ -75,8 +75,14 @@ already used by `slacker-budget-web` and `slacker-pr-web`.
 2. Replace localStorage-token `AuthContext` with the OIDC context; feed the
    access token into axios via `setAuthToken` (beehive `client.ts` pattern;
    on 401 clear the token, never reload).
-3. Delete `Login.tsx`/`SignUp.tsx`; `ProtectedRoute` triggers `signinRedirect`
-   when unauthenticated. Add `public/silent-renew.html`.
+3. Delete `Login.tsx`/`SignUp.tsx`; add public `Landing.tsx` at `/` with a
+   Log In button. `ProtectedRoute` no longer auto-redirects to Keycloak —
+   unauthenticated visits navigate to `/` (stashing the attempted URL in
+   `sessionStorage` via `returnTo.ts`, since history state does not survive
+   the Keycloak round-trip) and it is restored after login; Dashboard lives
+   at `/events`. Add `public/silent-renew.html`. Post-logout
+   (`post_logout_redirect_uri` = origin) now lands on the landing page and
+   stays there.
 4. Derive image URLs from the API base URL instead of hardcoded
    `http://localhost:5000`.
 
