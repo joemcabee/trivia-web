@@ -5,6 +5,8 @@ WORKDIR /app
 # Accept Vite env vars at build time (e.g. API base URL)
 ARG VITE_API_URL
 ENV VITE_API_URL=${VITE_API_URL}
+ARG VITE_OIDC_AUTHORITY
+ENV VITE_OIDC_AUTHORITY=${VITE_OIDC_AUTHORITY}
 
 # Install dependencies
 COPY package.json package-lock.json* ./
