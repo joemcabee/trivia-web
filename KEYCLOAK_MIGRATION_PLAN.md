@@ -33,9 +33,12 @@ already used by `slacker-budget-web` and `slacker-pr-web`.
   `sub` still missing from real and Evaluate-simulated tokens; likely a
   reserved-name collision). Final pattern, verified end to end: put the `sub`
   mapper on the per-API scope (`trivia-api-scope`, alongside the audience
-  mapper) so API audience + subject travel together. Without `sub`, account
-  resolution fails (the missing-`sub` warning in `CurrentAccountService`
-  logs the claim types present). Do NOT name a custom scope `basic`.
+  mapper) so API audience + subject travel together, with explicit config
+  (`lightweight.claim=false`, `access.token.claim=true`,
+  `introspection.token.claim=true`) — empty `{}` silently never fires.
+  Without `sub`, account resolution fails (the missing-`sub` warning in
+  `CurrentAccountService` logs the claim types present). Do NOT name a custom
+  scope `basic`.
 - Test and prod deployments share one production SlackerDB; realm is config-only
   (`Keycloak:Authority`).
 
@@ -114,10 +117,14 @@ already used by `slacker-budget-web` and `slacker-pr-web`.
   row with NULL `legacy_user_id`).
 - [x] Prod login resolves the mapped account and shows existing events
   (verified 2026-09: existing data readable/editable after cutover).
-- [ ] A user cannot read/add/update/delete another account's records.
-- [ ] Logout returns to the app with the Keycloak session cleared.
+- [x] Cross-account isolation (verified 2026-09: test and prod accounts show
+  no crossover in either direction).
+- [x] Logout returns to the app with the Keycloak session cleared (verified
+  2026-09).
 - [x] No trivia FK references `AspNetUsers`; `support` column untouched
-  structurally (cutover script ran successfully).
+  structurally (cutover script ran successfully). The `AspNet*` tables
+  themselves are intentionally retained — other apps still use them.
 - [x] `dotnet build` and `npm run build` pass.
 - Remaining for cutover day: import `slacker-prd.json`, deploy with prd
-  authority/URLs, re-verify, then drop the `AspNet*` tables.
+  authority/URLs, re-verify. `AspNet*` tables stay until the last dependent
+  app migrates.
