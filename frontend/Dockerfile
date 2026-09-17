@@ -10,7 +10,8 @@ ENV VITE_OIDC_AUTHORITY=${VITE_OIDC_AUTHORITY}
 
 # Install dependencies
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --prefer-offline --no-audit --no-fund
 
 # Build the app
 COPY . .

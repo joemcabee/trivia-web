@@ -4,11 +4,13 @@ WORKDIR /src
 
 # Copy csproj and restore as distinct layers
 COPY ["TriviaApp.API.csproj", "./"]
-RUN dotnet restore "TriviaApp.API.csproj"
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet restore "TriviaApp.API.csproj"
 
 # Copy everything else and build
 COPY . .
-RUN dotnet publish "TriviaApp.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet publish "TriviaApp.API.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
