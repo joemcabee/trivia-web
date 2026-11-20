@@ -722,7 +722,7 @@ function ContentView({ eventId }: ContentViewProps) {
               <>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                   Upload a <span className="font-semibold">.csv</span> or <span className="font-semibold">.xlsx</span> with columns:
-                  <span className="font-mono"> Round, Category, Question, Answer</span>.
+                  <span className="font-mono"> Round, Category, Question, Answer, ImageUrl (optional)</span>.
                 </p>
 
                 <form onSubmit={handleImportQuestions}>

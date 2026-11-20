@@ -38,7 +38,7 @@ public class EventService : IEventService
         return trimmed;
     }
 
-    private sealed record ImportRow(int RowNumber, string Round, string Category, string Question, string Answer);
+    private sealed record ImportRow(int RowNumber, string Round, string Category, string Question, string Answer, string ImageUrl);
 
     public async Task<List<EventDto>> GetAllEventsAsync(string userId)
     {
@@ -739,6 +739,7 @@ public class EventService : IEventService
             var categoryName = NormalizeName(row.Category);
             var questionText = NormalizeName(row.Question);
             var answerText = NormalizeName(row.Answer);
+            var imageUrl = NormalizeName(row.ImageUrl);
 
             if (string.IsNullOrWhiteSpace(roundName) ||
                 string.IsNullOrWhiteSpace(categoryName) ||
@@ -750,6 +751,17 @@ public class EventService : IEventService
                 {
                     RowNumber = row.RowNumber,
                     Message = "Round, Category, Question, and Answer are all required."
+                });
+                continue;
+            }
+
+            if (!string.IsNullOrWhiteSpace(imageUrl) && !IsHttpImageUrl(imageUrl))
+            {
+                result.SkippedRows++;
+                result.Errors.Add(new ImportRowErrorDto
+                {
+                    RowNumber = row.RowNumber,
+                    Message = "ImageUrl must be an absolute HTTP or HTTPS URL when provided."
                 });
                 continue;
             }
@@ -803,6 +815,7 @@ public class EventService : IEventService
             {
                 QuestionText = questionText,
                 Answer = answerText,
+                ImageUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl,
                 Category = categoryEntity,
                 Order = nextQuestionOrder,
                 CreatedOn = DateTime.UtcNow
@@ -815,6 +828,12 @@ public class EventService : IEventService
 
         await _context.SaveChangesAsync();
         return result;
+    }
+
+    private static bool IsHttpImageUrl(string value)
+    {
+        return Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
+               (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
     }
 
     private static int GetNextQuestionOrder(
@@ -903,6 +922,7 @@ public class EventService : IEventService
             string category;
             string question;
             string answer;
+            string imageUrl;
 
             if (firstRowHasHeaders)
             {
@@ -910,6 +930,7 @@ public class EventService : IEventService
                 category = GetCsvFieldCaseInsensitive(csv, "Category");
                 question = GetCsvFieldCaseInsensitive(csv, "Question");
                 answer = GetCsvFieldCaseInsensitive(csv, "Answer");
+                imageUrl = GetCsvFieldCaseInsensitive(csv, "ImageUrl");
             }
             else
             {
@@ -917,12 +938,14 @@ public class EventService : IEventService
                 category = csv.GetField(1) ?? string.Empty;
                 question = csv.GetField(2) ?? string.Empty;
                 answer = csv.GetField(3) ?? string.Empty;
+                imageUrl = csv.GetField(4) ?? string.Empty;
             }
 
             if (string.IsNullOrWhiteSpace(round) &&
                 string.IsNullOrWhiteSpace(category) &&
                 string.IsNullOrWhiteSpace(question) &&
-                string.IsNullOrWhiteSpace(answer))
+                string.IsNullOrWhiteSpace(answer) &&
+                string.IsNullOrWhiteSpace(imageUrl))
             {
                 continue;
             }
@@ -932,7 +955,8 @@ public class EventService : IEventService
                 Round: round,
                 Category: category,
                 Question: question,
-                Answer: answer));
+                Answer: answer,
+                ImageUrl: imageUrl));
         }
 
         return rows;
@@ -960,7 +984,7 @@ public class EventService : IEventService
         if (lastRow == 0)
             return new List<ImportRow>();
 
-        int colRound = 1, colCategory = 2, colQuestion = 3, colAnswer = 4;
+        int colRound = 1, colCategory = 2, colQuestion = 3, colAnswer = 4, colImageUrl = 5;
         var startRow = 1;
 
         if (firstRowHasHeaders)
@@ -972,6 +996,7 @@ public class EventService : IEventService
             colCategory = FindHeaderColumn(headerRow, "Category") ?? throw new InvalidOperationException("Spreadsheet header row must include a 'Category' column.");
             colQuestion = FindHeaderColumn(headerRow, "Question") ?? throw new InvalidOperationException("Spreadsheet header row must include a 'Question' column.");
             colAnswer = FindHeaderColumn(headerRow, "Answer") ?? throw new InvalidOperationException("Spreadsheet header row must include an 'Answer' column.");
+            colImageUrl = FindHeaderColumn(headerRow, "ImageUrl") ?? 0;
         }
 
         var rows = new List<ImportRow>();
@@ -981,11 +1006,13 @@ public class EventService : IEventService
             var category = ws.Cell(r, colCategory).GetString();
             var question = ws.Cell(r, colQuestion).GetString();
             var answer = ws.Cell(r, colAnswer).GetString();
+            var imageUrl = colImageUrl == 0 ? string.Empty : ws.Cell(r, colImageUrl).GetString();
 
             if (string.IsNullOrWhiteSpace(round) &&
                 string.IsNullOrWhiteSpace(category) &&
                 string.IsNullOrWhiteSpace(question) &&
-                string.IsNullOrWhiteSpace(answer))
+                string.IsNullOrWhiteSpace(answer) &&
+                string.IsNullOrWhiteSpace(imageUrl))
             {
                 continue;
             }
@@ -995,7 +1022,8 @@ public class EventService : IEventService
                 Round: round,
                 Category: category,
                 Question: question,
-                Answer: answer));
+                Answer: answer,
+                ImageUrl: imageUrl));
         }
 
         return rows;
