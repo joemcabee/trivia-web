@@ -1,5 +1,8 @@
 namespace TriviaApp.API.Services;
 
+using System.Text.Json;
+using TriviaApp.API.DTOs;
+
 public class ImageService : IImageService
 {
     private readonly IWebHostEnvironment _environment;
@@ -35,7 +38,9 @@ public class ImageService : IImageService
 
     public async Task<bool> DeleteImageAsync(string imageUrl)
     {
-        if (string.IsNullOrEmpty(imageUrl))
+        if (string.IsNullOrEmpty(imageUrl) ||
+            !imageUrl.StartsWith($"/{ImagesFolder}/", StringComparison.OrdinalIgnoreCase) ||
+            imageUrl.Contains("..", StringComparison.Ordinal))
             return false;
 
         try
@@ -57,6 +62,23 @@ public class ImageService : IImageService
         }
 
         return false;
+    }
+
+    public async Task<IReadOnlyList<StockImageDto>> GetStockImagesAsync()
+    {
+        var manifestPath = Path.Combine(_environment.ContentRootPath, "wwwroot", "shared", "stock-images.json");
+        if (!File.Exists(manifestPath))
+            return Array.Empty<StockImageDto>();
+
+        await using var stream = File.OpenRead(manifestPath);
+        var manifest = await JsonSerializer.DeserializeAsync<StockImageManifest>(stream,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        return manifest?.Images ?? (IReadOnlyList<StockImageDto>)Array.Empty<StockImageDto>();
+    }
+
+    private sealed class StockImageManifest
+    {
+        public List<StockImageDto> Images { get; set; } = new();
     }
 }
 

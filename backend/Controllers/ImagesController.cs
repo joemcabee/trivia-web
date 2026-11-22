@@ -16,6 +16,12 @@ public class ImagesController : ControllerBase
         _imageService = imageService;
     }
 
+    [HttpGet("stock")]
+    public async Task<ActionResult<IReadOnlyList<TriviaApp.API.DTOs.StockImageDto>>> GetStockImages()
+    {
+        return Ok(await _imageService.GetStockImagesAsync());
+    }
+
     [HttpPost("upload")]
     public async Task<ActionResult<string>> UploadImage(IFormFile file)
     {

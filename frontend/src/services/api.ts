@@ -103,6 +103,13 @@ export interface Question {
   order: number
 }
 
+export interface StockImage {
+  path: string
+  name: string
+  category: string
+  altText: string
+}
+
 export interface QuestionSearchResult {
   questionId: number
   eventId: number
@@ -288,6 +295,11 @@ export const eventApi = {
       },
     })
     return response.data.imageUrl
+  },
+
+  getStockImages: async (): Promise<StockImage[]> => {
+    const response = await api.get<StockImage[]>('/images/stock')
+    return response.data
   },
 
   importQuestions: async (

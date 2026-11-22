@@ -290,7 +290,7 @@ public class EventService : IEventService
         {
             QuestionText = createQuestionDto.QuestionText,
             Answer = createQuestionDto.Answer,
-            ImageUrl = createQuestionDto.ImageUrl,
+            ImageUrl = GetValidatedImageUrl(createQuestionDto.ImageUrl),
             CategoryId = createQuestionDto.CategoryId,
             Order = maxOrder + 1,
             CreatedOn = DateTime.UtcNow
@@ -322,7 +322,7 @@ public class EventService : IEventService
 
         question.QuestionText = updateQuestionDto.QuestionText;
         question.Answer = updateQuestionDto.Answer;
-        question.ImageUrl = updateQuestionDto.ImageUrl;
+        question.ImageUrl = GetValidatedImageUrl(updateQuestionDto.ImageUrl);
 
         await _context.SaveChangesAsync();
 
@@ -739,7 +739,7 @@ public class EventService : IEventService
             var categoryName = NormalizeName(row.Category);
             var questionText = NormalizeName(row.Question);
             var answerText = NormalizeName(row.Answer);
-            var imageUrl = NormalizeName(row.ImageUrl);
+            var imageUrl = NormalizeImageUrl(row.ImageUrl);
 
             if (string.IsNullOrWhiteSpace(roundName) ||
                 string.IsNullOrWhiteSpace(categoryName) ||
@@ -755,13 +755,13 @@ public class EventService : IEventService
                 continue;
             }
 
-            if (!string.IsNullOrWhiteSpace(imageUrl) && !IsHttpImageUrl(imageUrl))
+            if (!string.IsNullOrWhiteSpace(row.ImageUrl) && imageUrl == null)
             {
                 result.SkippedRows++;
                 result.Errors.Add(new ImportRowErrorDto
                 {
                     RowNumber = row.RowNumber,
-                    Message = "ImageUrl must be an absolute HTTP or HTTPS URL when provided."
+                    Message = "ImageUrl must be an absolute HTTP/HTTPS URL, an uploaded /images/ path, or a shared/... stock image path."
                 });
                 continue;
             }
@@ -830,10 +830,32 @@ public class EventService : IEventService
         return result;
     }
 
-    private static bool IsHttpImageUrl(string value)
+    private static string? NormalizeImageUrl(string? value)
     {
-        return Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
-               (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+        var imageUrl = NormalizeName(value ?? string.Empty);
+        if (string.IsNullOrWhiteSpace(imageUrl))
+            return null;
+
+        if (Uri.TryCreate(imageUrl, UriKind.Absolute, out var uri) &&
+            (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            return imageUrl;
+
+        var rootRelativePath = imageUrl.StartsWith('/') ? imageUrl : $"/{imageUrl}";
+        if ((rootRelativePath.StartsWith("/shared/", StringComparison.OrdinalIgnoreCase) ||
+             rootRelativePath.StartsWith("/images/", StringComparison.OrdinalIgnoreCase)) &&
+            !rootRelativePath.Contains("..", StringComparison.Ordinal))
+            return rootRelativePath;
+
+        return null;
+    }
+
+    private static string? GetValidatedImageUrl(string? value)
+    {
+        var imageUrl = NormalizeImageUrl(value);
+        if (!string.IsNullOrWhiteSpace(value) && imageUrl == null)
+            throw new ArgumentException("ImageUrl must be an absolute HTTP/HTTPS URL, an uploaded /images/ path, or a shared/... stock image path.");
+
+        return imageUrl;
     }
 
     private static int GetNextQuestionOrder(

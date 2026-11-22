@@ -24,8 +24,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex-grow bg-gray-100 dark:bg-gray-900 flex items-center justify-center px-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Sign-in failed</h1>
-          <p className="text-gray-600 dark:text-gray-400 text-sm mb-6">{auth.error.message}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Please sign in again</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-sm mb-6">
+            Your sign-in session has expired or is no longer available. Please sign in again to continue.
+          </p>
           <button
             onClick={() => auth.signinRedirect()}
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"

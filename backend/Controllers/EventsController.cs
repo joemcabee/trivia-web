@@ -130,20 +130,27 @@ public class EventsController : ControllerBase
             var questionDto = await _eventService.CreateQuestionAsync(createQuestionDto, UserId);
             return Ok(questionDto);
         }
-        catch (ArgumentException)
+        catch (ArgumentException ex)
         {
-            return NotFound();
+            return BadRequest(ex.Message);
         }
     }
 
     [HttpPut("questions/{id}")]
     public async Task<ActionResult<QuestionDto>> UpdateQuestion(int id, UpdateQuestionDto updateQuestionDto)
     {
-        var questionDto = await _eventService.UpdateQuestionAsync(id, updateQuestionDto, UserId);
-        if (questionDto == null)
-            return NotFound();
+        try
+        {
+            var questionDto = await _eventService.UpdateQuestionAsync(id, updateQuestionDto, UserId);
+            if (questionDto == null)
+                return NotFound();
 
-        return Ok(questionDto);
+            return Ok(questionDto);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpDelete("questions/{id}")]

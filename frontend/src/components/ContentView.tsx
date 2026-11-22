@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { eventApi, EventDetails, ImportQuestionsResult, Question, QuestionSearchResult, resolveImageUrl } from '../services/api'
+import { eventApi, EventDetails, ImportQuestionsResult, Question, QuestionSearchResult, resolveImageUrl, StockImage } from '../services/api'
 
 interface ContentViewProps {
   eventId: number
@@ -19,6 +19,8 @@ function ContentView({ eventId }: ContentViewProps) {
   const [answer, setAnswer] = useState('')
   const [questionImageUrl, setQuestionImageUrl] = useState<string | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [stockImages, setStockImages] = useState<StockImage[]>([])
+  const [stockImagesLoading, setStockImagesLoading] = useState(false)
   const [editingQuestionId, setEditingQuestionId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchIncludeCurrentEvent, setSearchIncludeCurrentEvent] = useState(false)
@@ -76,6 +78,23 @@ function ContentView({ eventId }: ContentViewProps) {
       clearTimeout(timeout)
     }
   }, [searchQuery, showQuestionModal, eventId, searchIncludeCurrentEvent])
+
+  useEffect(() => {
+    if (!showQuestionModal || stockImages.length > 0) return
+
+    let cancelled = false
+    setStockImagesLoading(true)
+    eventApi.getStockImages()
+      .then((images) => {
+        if (!cancelled) setStockImages(images)
+      })
+      .catch((error) => console.error('Failed to load stock images:', error))
+      .finally(() => {
+        if (!cancelled) setStockImagesLoading(false)
+      })
+
+    return () => { cancelled = true }
+  }, [showQuestionModal, stockImages.length])
 
   const loadEvent = async () => {
     try {
@@ -639,6 +658,36 @@ function ContentView({ eventId }: ContentViewProps) {
                     className="mt-2 max-w-xs rounded shadow dark:shadow-gray-900"
                   />
                 )}
+                <div className="mt-4 border-t dark:border-gray-700 pt-4">
+                  <p className="text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Stock images</p>
+                  {stockImagesLoading ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Loading stock images...</p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      {stockImages.map((stockImage) => (
+                        <button
+                          key={stockImage.path}
+                          type="button"
+                          onClick={() => setQuestionImageUrl(stockImage.path)}
+                          className={`overflow-hidden rounded border-2 text-left transition ${questionImageUrl === stockImage.path ? 'border-blue-500 ring-2 ring-blue-300 dark:ring-blue-700' : 'border-gray-200 dark:border-gray-600 hover:border-blue-400'}`}
+                          title={`Use ${stockImage.name}`}
+                        >
+                          <img src={resolveImageUrl(stockImage.path) ?? ''} alt={stockImage.altText} className="aspect-video w-full object-cover" />
+                          <span className="block px-2 py-1 text-xs text-gray-700 dark:text-gray-200">{stockImage.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {questionImageUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setQuestionImageUrl(null)}
+                      className="mt-2 text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                    >
+                      Remove image
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="flex justify-end gap-2">
                 <button
@@ -722,7 +771,7 @@ function ContentView({ eventId }: ContentViewProps) {
               <>
                 <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                   Upload a <span className="font-semibold">.csv</span> or <span className="font-semibold">.xlsx</span> with columns:
-                  <span className="font-mono"> Round, Category, Question, Answer, ImageUrl (optional)</span>.
+                  <span className="font-mono"> Round, Category, Question, Answer, ImageUrl (optional)</span>. Stock images may use a path such as <span className="font-mono">shared/music.svg</span>.
                 </p>
 
                 <form onSubmit={handleImportQuestions}>

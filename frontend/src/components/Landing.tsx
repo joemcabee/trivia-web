@@ -38,8 +38,11 @@ export default function Landing() {
           </ul>
         </div>
         {auth.error ? (
-          <div>
-            <p className="text-red-600 dark:text-red-400 text-sm mb-4">{auth.error.message}</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Please sign in again</h2>
+            <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+              Your sign-in session has expired or is no longer available. Please sign in again to continue.
+            </p>
             <button
               onClick={() => auth.signinRedirect()}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg text-lg"

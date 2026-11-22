@@ -1,0 +1,11 @@
+{
+  "images": [
+    { "path": "/shared/before-and-after.svg", "name": "Before and After", "category": "General", "altText": "Colorful before-and-after spinner" },
+    { "path": "/shared/final-jeopardy.svg", "name": "Final Jeopardy", "category": "General", "altText": "Blue game board with a question mark" },
+    { "path": "/shared/history.svg", "name": "History", "category": "History", "altText": "Classical building representing history" },
+    { "path": "/shared/movies.svg", "name": "Movies", "category": "Movies", "altText": "Movie-themed illustration" },
+    { "path": "/shared/music.svg", "name": "Music", "category": "Music", "altText": "Music-themed illustration" },
+    { "path": "/shared/sports.svg", "name": "Sports", "category": "Sports", "altText": "Sports-themed illustration" },
+    { "path": "/shared/tv.svg", "name": "TV", "category": "Television", "altText": "Retro television illustration" }
+  ]
+}
