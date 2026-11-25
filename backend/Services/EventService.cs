@@ -20,6 +20,7 @@ public class EventService : IEventService
 
     private static string NormalizeTeamName(string name) => name.Trim();
     private static string NormalizeName(string name) => (name ?? string.Empty).Trim();
+    private static string? NormalizeOptionalText(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     private static string NormalizeRoundName(string value)
     {
         var trimmed = NormalizeName(value);
@@ -82,6 +83,9 @@ public class EventService : IEventService
             Id = eventEntity.Id,
             Name = eventEntity.Name,
             Description = eventEntity.Description,
+            WelcomeMessage = eventEntity.WelcomeMessage,
+            EventDate = eventEntity.EventDate,
+            RulesText = eventEntity.RulesText,
             CreatedAt = eventEntity.CreatedOn,
             UpdatedAt = eventEntity.UpdatedOn,
             RoundCount = eventEntity.Rounds.Count,
@@ -120,6 +124,9 @@ public class EventService : IEventService
             Id = eventEntity.Id,
             Name = eventEntity.Name,
             Description = eventEntity.Description,
+            WelcomeMessage = eventEntity.WelcomeMessage,
+            EventDate = eventEntity.EventDate,
+            RulesText = eventEntity.RulesText,
             CreatedAt = eventEntity.CreatedOn,
             UpdatedAt = eventEntity.UpdatedOn,
             RoundCount = 1,
@@ -139,6 +146,9 @@ public class EventService : IEventService
 
         eventEntity.Name = updateEventDto.Name;
         eventEntity.Description = updateEventDto.Description;
+        eventEntity.WelcomeMessage = NormalizeOptionalText(updateEventDto.WelcomeMessage);
+        eventEntity.EventDate = updateEventDto.EventDate;
+        eventEntity.RulesText = NormalizeOptionalText(updateEventDto.RulesText);
         eventEntity.UpdatedOn = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -514,6 +524,9 @@ public class EventService : IEventService
             Id = eventEntity.Id,
             Name = eventEntity.Name,
             Description = eventEntity.Description,
+            WelcomeMessage = eventEntity.WelcomeMessage,
+            EventDate = eventEntity.EventDate,
+            RulesText = eventEntity.RulesText,
             CreatedAt = eventEntity.CreatedOn,
             UpdatedAt = eventEntity.UpdatedOn,
             RoundCount = eventEntity.Rounds.Count,
@@ -542,6 +555,9 @@ public class EventService : IEventService
             Id = eventEntity.Id,
             Name = eventEntity.Name,
             Description = eventEntity.Description,
+            WelcomeMessage = eventEntity.WelcomeMessage,
+            EventDate = eventEntity.EventDate,
+            RulesText = eventEntity.RulesText,
             CreatedAt = eventEntity.CreatedOn,
             UpdatedAt = eventEntity.UpdatedOn,
             Rounds = eventEntity.Rounds.OrderBy(r => r.Order).Select(r => new RoundDetailsDto
@@ -607,6 +623,9 @@ public class EventService : IEventService
         {
             Name = $"Copy of {originalEvent.Name}",
             Description = originalEvent.Description,
+            WelcomeMessage = originalEvent.WelcomeMessage,
+            EventDate = originalEvent.EventDate,
+            RulesText = originalEvent.RulesText,
             CreatedOn = DateTime.UtcNow,
             UpdatedOn = DateTime.UtcNow,
             UserId = userId

@@ -41,6 +41,8 @@ public class PresentationController : ControllerBase
 
         var slides = new List<PresentationSlideDto>();
 
+        AddOpeningSlides(eventEntity, slides);
+
         foreach (var round in eventEntity.Rounds.OrderBy(r => r.Order))
         {
             foreach (var category in round.Categories.OrderBy(c => c.Order))
@@ -89,6 +91,53 @@ public class PresentationController : ControllerBase
             EventName = eventEntity.Name,
             Slides = slides
         });
+    }
+
+    [HttpGet("event/{eventId}/opening")]
+    public async Task<ActionResult<PresentationDataDto>> GetOpeningSlides(int eventId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        var eventEntity = await _context.Events
+            .Where(e => e.Id == eventId && e.UserId == userId)
+            .FirstOrDefaultAsync();
+
+        if (eventEntity == null)
+            return NotFound();
+
+        var slides = new List<PresentationSlideDto>();
+        AddOpeningSlides(eventEntity, slides);
+
+        return Ok(new PresentationDataDto
+        {
+            EventId = eventEntity.Id,
+            EventName = eventEntity.Name,
+            Slides = slides
+        });
+    }
+
+    private static void AddOpeningSlides(TriviaApp.API.Models.Event eventEntity, List<PresentationSlideDto> slides)
+    {
+        if (!string.IsNullOrWhiteSpace(eventEntity.WelcomeMessage))
+        {
+            slides.Add(new PresentationSlideDto
+            {
+                Type = "welcome",
+                QuestionText = eventEntity.WelcomeMessage,
+                EventDate = eventEntity.EventDate
+            });
+        }
+
+        if (!string.IsNullOrWhiteSpace(eventEntity.RulesText))
+        {
+            slides.Add(new PresentationSlideDto
+            {
+                Type = "rules",
+                QuestionText = "Rules",
+                Rules = eventEntity.RulesText
+                    .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .ToList()
+            });
+        }
     }
 
     [HttpGet("event/{eventId}/round/{roundId}")]
@@ -176,4 +225,6 @@ public class PresentationSlideDto
     public string? ImageUrl { get; set; }
     public int QuestionId { get; set; }
     public int QuestionNumber { get; set; }
+    public DateOnly? EventDate { get; set; }
+    public List<string> Rules { get; set; } = new();
 }

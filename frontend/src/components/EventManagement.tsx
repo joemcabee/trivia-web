@@ -14,6 +14,9 @@ function EventManagement() {
   const [showEditEventModal, setShowEditEventModal] = useState(false)
   const [eventName, setEventName] = useState('')
   const [eventDescription, setEventDescription] = useState('')
+  const [welcomeMessage, setWelcomeMessage] = useState('')
+  const [eventDate, setEventDate] = useState('')
+  const [rulesText, setRulesText] = useState('')
   const [selectedView, setSelectedView] = useState<'content' | 'teams' | 'points' | 'scoreboard'>('content')
 
   useEffect(() => {
@@ -38,6 +41,9 @@ function EventManagement() {
     if (event) {
       setEventName(event.name)
       setEventDescription(event.description)
+      setWelcomeMessage(event.welcomeMessage ?? '')
+      setEventDate(event.eventDate ?? '')
+      setRulesText(event.rulesText ?? '')
       setShowEditEventModal(true)
     }
   }
@@ -47,7 +53,7 @@ function EventManagement() {
     if (!id || !event) return
 
     try {
-      await eventApi.updateEvent(parseInt(id), eventName, eventDescription)
+      await eventApi.updateEvent(parseInt(id), eventName, eventDescription, welcomeMessage, eventDate, rulesText)
       setShowEditEventModal(false)
       loadEvent()
     } catch (error) {
@@ -153,6 +159,34 @@ function EventManagement() {
                     required
                   />
                 </div>
+                <div className="border-t dark:border-gray-700 pt-4 mb-4">
+                  <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Opening slides</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Optional. The welcome slide and rules appear before the first question.</p>
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Welcome message</label>
+                  <textarea
+                    value={welcomeMessage}
+                    onChange={(e) => setWelcomeMessage(e.target.value)}
+                    placeholder="Welcome to St. Charles Trivia Night!"
+                    className="shadow appearance-none border dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    rows={2}
+                  />
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mt-4 mb-2">Event date</label>
+                  <input
+                    type="date"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    className="shadow appearance-none border dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  />
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mt-4 mb-2">Rules</label>
+                  <textarea
+                    value={rulesText}
+                    onChange={(e) => setRulesText(e.target.value)}
+                    placeholder={'One rule per line, for example:\n7 rounds\nNo use of electronic devices'}
+                    className="shadow appearance-none border dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                    rows={6}
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Each non-empty line becomes a numbered rule.</p>
+                </div>
                 <div className="mb-4">
                   <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">
                     Description
@@ -171,6 +205,9 @@ function EventManagement() {
                       setShowEditEventModal(false)
                       setEventName('')
                       setEventDescription('')
+                      setWelcomeMessage('')
+                      setEventDate('')
+                      setRulesText('')
                     }}
                     className="bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded"
                   >

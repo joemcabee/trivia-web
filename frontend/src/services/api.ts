@@ -57,6 +57,9 @@ export interface Event {
   id: number
   name: string
   description: string
+  welcomeMessage: string | null
+  eventDate: string | null
+  rulesText: string | null
   createdAt: string
   updatedAt: string
   roundCount: number
@@ -124,6 +127,9 @@ export interface EventDetails {
   id: number
   name: string
   description: string
+  welcomeMessage: string | null
+  eventDate: string | null
+  rulesText: string | null
   createdAt: string
   updatedAt: string
   rounds: Round[]
@@ -132,7 +138,7 @@ export interface EventDetails {
 }
 
 export interface PresentationSlide {
-  type: 'question' | 'answer'
+  type: 'welcome' | 'rules' | 'question' | 'answer'
   roundName: string
   categoryName: string
   questionText: string
@@ -140,6 +146,8 @@ export interface PresentationSlide {
   imageUrl: string | null
   questionId: number
   questionNumber: number
+  eventDate: string | null
+  rules: string[]
 }
 
 export interface PresentationData {
@@ -185,8 +193,8 @@ export const eventApi = {
     return response.data
   },
 
-  updateEvent: async (id: number, name: string, description: string): Promise<Event> => {
-    const response = await api.put<Event>(`/events/${id}`, { name, description })
+  updateEvent: async (id: number, name: string, description: string, welcomeMessage: string, eventDate: string, rulesText: string): Promise<Event> => {
+    const response = await api.put<Event>(`/events/${id}`, { name, description, welcomeMessage, eventDate: eventDate || null, rulesText })
     return response.data
   },
 
@@ -276,6 +284,11 @@ export const eventApi = {
 
   getPresentationData: async (eventId: number): Promise<PresentationData> => {
     const response = await api.get<PresentationData>(`/presentation/event/${eventId}`)
+    return response.data
+  },
+
+  getOpeningSlides: async (eventId: number): Promise<PresentationData> => {
+    const response = await api.get<PresentationData>(`/presentation/event/${eventId}/opening`)
     return response.data
   },
 

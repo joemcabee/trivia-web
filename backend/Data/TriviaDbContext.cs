@@ -29,6 +29,9 @@ public class TriviaDbContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Name).IsRequired().HasMaxLength(200).HasColumnName("name");
             entity.Property(e => e.Description).IsRequired().HasColumnName("description");
+            entity.Property(e => e.WelcomeMessage).HasColumnName("welcome_message");
+            entity.Property(e => e.EventDate).HasColumnName("event_date");
+            entity.Property(e => e.RulesText).HasColumnName("rules_text");
             entity.Property(e => e.CreatedOn).HasColumnName("created_on");
             entity.Property(e => e.UpdatedOn).HasColumnName("updated_on");
             // Shared-registry account UUID. C# stays string so all ownership

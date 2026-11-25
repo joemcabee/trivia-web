@@ -91,6 +91,20 @@ function Presentation() {
     }
   }
 
+  const startOpeningSlides = async () => {
+    try {
+      setLoading(true)
+      const data = await eventApi.getOpeningSlides(parseInt(id!))
+      setPresentationData(data)
+      setCurrentSlideIndex(0)
+      setIsPresenting(true)
+    } catch (error) {
+      console.error('Failed to load opening slides:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleNextSlide = useCallback(() => {
     setCurrentSlideIndex((prev) => {
       if (presentationData && prev < presentationData.slides.length - 1) {
@@ -127,6 +141,7 @@ function Presentation() {
 
   if (!isPresenting) {
     const roundsSorted = eventDetails.rounds.slice().sort((a, b) => a.order - b.order)
+    const hasOpeningSlides = Boolean(eventDetails.welcomeMessage?.trim() || eventDetails.rulesText?.trim())
 
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white flex flex-col">
@@ -206,11 +221,18 @@ function Presentation() {
 
               <div className="flex gap-3">
                 <button
+                  onClick={startOpeningSlides}
+                  disabled={!hasOpeningSlides}
+                  className="bg-green-600 hover:bg-green-700 disabled:bg-green-300 dark:disabled:bg-green-900 disabled:text-green-100 text-white font-bold py-2 px-4 rounded"
+                >
+                  Show Opening Slides
+                </button>
+                <button
                   onClick={() => selectedRoundId && startRoundPresentation(selectedRoundId, mode)}
                   disabled={!selectedRoundId}
                   className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-2 px-4 rounded"
                 >
-                  Start
+                  Start Round
                 </button>
                 <button
                   onClick={() => navigate(`/event/${id}`)}
@@ -219,6 +241,9 @@ function Presentation() {
                   Back
                 </button>
               </div>
+              {!hasOpeningSlides && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">Add a welcome message or rules in Edit Event to enable opening slides.</p>
+              )}
               <div className="text-xs text-gray-400 dark:text-gray-500 mt-6">Tip: press Esc to exit.</div>
             </div>
           </div>
@@ -237,6 +262,7 @@ function Presentation() {
 
   const currentSlide = presentationData.slides[currentSlideIndex]
   const isAnswerSlide = currentSlide.type === 'answer'
+  const isOpeningSlide = currentSlide.type === 'welcome' || currentSlide.type === 'rules'
 
   // Show image if we have the URL and enough screen space
   // Hide image if screen is too small (less than 700px) or if answer is showing on smaller screens
@@ -248,16 +274,35 @@ function Presentation() {
       <div className="flex-1 flex items-center justify-center p-4 md:p-6">
         <div className="w-full max-w-[96vw]">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 md:p-10 shadow-2xl min-h-[75vh] flex flex-col">
-            <div className="mb-4">
+            {!isOpeningSlide && <div className="mb-4">
               <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 {currentSlide.roundName || 'Round'} • {currentSlide.categoryName || 'Category'} • Question {currentSlide.questionNumber || 0}
               </div>
               <div className="text-xs text-gray-400 dark:text-gray-500">
                 Slide {currentSlideIndex + 1} of {presentationData.slides.length}
               </div>
-            </div>
+            </div>}
 
             <div className="flex-1 flex flex-col items-center justify-center">
+              {currentSlide.type === 'welcome' ? (
+                <div className="w-full max-w-6xl text-center">
+                  <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-gray-900 dark:text-white" style={{ lineHeight: '1.2' }}>
+                    {currentSlide.questionText}
+                  </h1>
+                  {currentSlide.eventDate && (
+                    <p className="mt-10 text-3xl md:text-4xl lg:text-5xl text-blue-700 dark:text-blue-300">
+                      {new Date(`${currentSlide.eventDate}T12:00:00`).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+                    </p>
+                  )}
+                </div>
+              ) : currentSlide.type === 'rules' ? (
+                <div className="w-full max-w-6xl">
+                  <h1 className="text-5xl md:text-7xl font-bold text-gray-900 dark:text-white border-b-2 border-gray-300 dark:border-gray-600 pb-6 mb-8">Rules</h1>
+                  <ol className="list-decimal list-outside pl-12 space-y-5 text-2xl md:text-4xl lg:text-5xl leading-tight text-gray-800 dark:text-gray-100 marker:text-blue-600 dark:marker:text-blue-400">
+                    {currentSlide.rules.map((rule, index) => <li key={index}>{rule}</li>)}
+                  </ol>
+                </div>
+              ) : <>
               <div className="w-full text-center mb-6">
                 <h2
                   className={`text-5xl md:text-6xl lg:text-7xl font-bold mb-6 ${
@@ -293,6 +338,7 @@ function Presentation() {
                   <div className="text-9xl text-gray-200 dark:text-gray-700">?</div>
                 </div>
               ) : null}
+              </>}
             </div>
           </div>
         </div>
