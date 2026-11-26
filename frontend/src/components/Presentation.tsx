@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { eventApi, EventDetails, PresentationData, PresentationMode, resolveImageUrl } from '../services/api'
 
@@ -10,6 +10,7 @@ function Presentation() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0)
   const [loading, setLoading] = useState(true)
   const [isPresenting, setIsPresenting] = useState(false)
+  const [isShowingScoreboard, setIsShowingScoreboard] = useState(false)
   const [selectedRoundId, setSelectedRoundId] = useState<number | null>(null)
   const [mode, setMode] = useState<PresentationMode>('QuestionsOnly')
   const [windowHeight, setWindowHeight] = useState(window.innerHeight)
@@ -82,6 +83,7 @@ function Presentation() {
       setLoading(true)
       const data = await eventApi.getRoundPresentationData(parseInt(id!), roundId, presentationMode)
       setPresentationData(data)
+      setIsShowingScoreboard(false)
       setCurrentSlideIndex(0)
       setIsPresenting(true)
     } catch (error) {
@@ -96,6 +98,7 @@ function Presentation() {
       setLoading(true)
       const data = await eventApi.getOpeningSlides(parseInt(id!))
       setPresentationData(data)
+      setIsShowingScoreboard(false)
       setCurrentSlideIndex(0)
       setIsPresenting(true)
     } catch (error) {
@@ -104,6 +107,46 @@ function Presentation() {
       setLoading(false)
     }
   }
+
+  const showScoreboard = async () => {
+    try {
+      setLoading(true)
+      // Fetch a fresh copy so the displayed totals include points entered
+      // since the presentation screen was opened.
+      const details = await eventApi.getEventDetails(parseInt(id!))
+      setEventDetails(details)
+      setPresentationData(null)
+      setIsShowingScoreboard(true)
+      setIsPresenting(true)
+    } catch (error) {
+      console.error('Failed to load scoreboard:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const scoreboardRows = useMemo(() => {
+    if (!eventDetails) return []
+
+    const pointsByTeamAndRound = new Map<string, number>()
+    eventDetails.teamPoints.forEach((teamPoint) => {
+      pointsByTeamAndRound.set(`${teamPoint.teamId}:${teamPoint.roundId}`, teamPoint.points)
+    })
+
+    return eventDetails.teams
+      .map((team) => {
+        const roundPoints = eventDetails.rounds.map(
+          (round) => pointsByTeamAndRound.get(`${team.id}:${round.id}`) ?? 0
+        )
+        return {
+          teamId: team.id,
+          teamName: team.name,
+          roundPoints,
+          totalPoints: roundPoints.reduce((total, points) => total + points, 0),
+        }
+      })
+      .sort((a, b) => b.totalPoints - a.totalPoints || a.teamName.localeCompare(b.teamName))
+  }, [eventDetails])
 
   const handleNextSlide = useCallback(() => {
     setCurrentSlideIndex((prev) => {
@@ -131,7 +174,7 @@ function Presentation() {
     )
   }
 
-  if (!eventDetails || eventDetails.rounds.length === 0) {
+  if (!eventDetails) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-gray-900 dark:text-white text-xl">No rounds available</div>
@@ -146,7 +189,7 @@ function Presentation() {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white flex flex-col">
         <div className="flex-1 flex items-center justify-center p-4 md:p-6">
-          <div className="w-full max-w-2xl">
+          <div className="w-full max-w-4xl">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 md:p-10 shadow-2xl">
               <div className="text-2xl font-bold mb-2">Presentation</div>
               <div className="text-sm text-gray-500 dark:text-gray-400 mb-8">{eventDetails.name}</div>
@@ -219,30 +262,40 @@ function Presentation() {
                 </fieldset>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3 sm:flex-nowrap">
                 <button
                   onClick={startOpeningSlides}
                   disabled={!hasOpeningSlides}
-                  className="bg-green-600 hover:bg-green-700 disabled:bg-green-300 dark:disabled:bg-green-900 disabled:text-green-100 text-white font-bold py-2 px-4 rounded"
+                  className="whitespace-nowrap bg-green-600 hover:bg-green-700 disabled:bg-green-300 dark:disabled:bg-green-900 disabled:text-green-100 text-white font-bold py-2 px-4 rounded"
                 >
                   Show Opening Slides
                 </button>
                 <button
+                  onClick={showScoreboard}
+                  disabled={eventDetails.teams.length === 0 || eventDetails.rounds.length === 0}
+                  className="whitespace-nowrap bg-purple-600 hover:bg-purple-700 disabled:bg-purple-300 dark:disabled:bg-purple-900 disabled:text-purple-100 text-white font-bold py-2 px-4 rounded"
+                >
+                  Show Scoreboard
+                </button>
+                <button
                   onClick={() => selectedRoundId && startRoundPresentation(selectedRoundId, mode)}
                   disabled={!selectedRoundId}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-2 px-4 rounded"
+                  className="whitespace-nowrap bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-2 px-4 rounded"
                 >
                   Start Round
                 </button>
                 <button
                   onClick={() => navigate(`/event/${id}`)}
-                  className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-white font-bold py-2 px-4 rounded"
+                  className="whitespace-nowrap bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-white font-bold py-2 px-4 rounded"
                 >
                   Back
                 </button>
               </div>
               {!hasOpeningSlides && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">Add a welcome message or rules in Edit Event to enable opening slides.</p>
+              )}
+              {(eventDetails.teams.length === 0 || eventDetails.rounds.length === 0) && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">Add teams and rounds to enable the scoreboard.</p>
               )}
               <div className="text-xs text-gray-400 dark:text-gray-500 mt-6">Tip: press Esc to exit.</div>
             </div>
@@ -253,6 +306,66 @@ function Presentation() {
   }
 
   if (!presentationData || presentationData.slides.length === 0) {
+    if (isShowingScoreboard) {
+      const roundsSorted = eventDetails.rounds.slice().sort((a, b) => a.order - b.order)
+      const rowHeight = Math.max(1, (windowHeight - 240) / (scoreboardRows.length + 1))
+      const scoreboardFontSize = Math.max(6, Math.min(24, rowHeight * 0.46))
+      const scoreboardCellPadding = Math.max(0, Math.min(16, (rowHeight - scoreboardFontSize * 1.15 - 1) / 2))
+
+      return (
+        <div className="h-screen overflow-hidden bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white flex flex-col">
+          <div className="flex-1 min-h-0 p-3 md:p-4">
+            <div className="w-full h-full max-w-[96vw] mx-auto">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 md:p-6 shadow-2xl h-full min-h-0 flex flex-col">
+                <div className="text-center mb-4">
+                  <h1 className="text-3xl md:text-4xl font-bold">Scoreboard</h1>
+                  <p className="mt-1 text-base md:text-xl text-gray-500 dark:text-gray-400">{eventDetails.name}</p>
+                </div>
+                <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
+                  <table
+                    className="w-full border border-gray-200 dark:border-gray-600"
+                    style={{ fontSize: `${scoreboardFontSize}px`, lineHeight: 1.15 }}
+                  >
+                    <thead>
+                      <tr className="bg-gray-100 dark:bg-gray-700">
+                        <th className="border border-gray-200 dark:border-gray-600 text-left" style={{ padding: `${scoreboardCellPadding}px 0.75rem` }}>Team</th>
+                        {roundsSorted.map((round) => (
+                          <th key={round.id} className="border border-gray-200 dark:border-gray-600 text-right whitespace-nowrap" style={{ padding: `${scoreboardCellPadding}px 0.75rem` }}>{round.name}</th>
+                        ))}
+                        <th className="border border-gray-200 dark:border-gray-600 text-right" style={{ padding: `${scoreboardCellPadding}px 0.75rem` }}>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {scoreboardRows.map((row, index) => (
+                        <tr key={row.teamId} className="odd:bg-white even:bg-gray-50 dark:odd:bg-gray-800 dark:even:bg-gray-700/50">
+                          <td className="border border-gray-200 dark:border-gray-600 font-semibold whitespace-nowrap" style={{ padding: `${scoreboardCellPadding}px 0.75rem` }}>
+                            <span className="mr-3 text-blue-600 dark:text-blue-400">{index + 1}.</span>{row.teamName}
+                          </td>
+                          {roundsSorted.map((round) => {
+                            const originalIndex = eventDetails.rounds.findIndex((item) => item.id === round.id)
+                            return <td key={round.id} className="border border-gray-200 dark:border-gray-600 text-right whitespace-nowrap" style={{ padding: `${scoreboardCellPadding}px 0.75rem` }}>{row.roundPoints[originalIndex]}</td>
+                          })}
+                          <td className="border border-gray-200 dark:border-gray-600 text-right font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap" style={{ padding: `${scoreboardCellPadding}px 0.75rem` }}>{row.totalPoints}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-gray-800 p-3 border-t dark:border-gray-700 flex justify-end">
+            <button
+              onClick={() => { setIsPresenting(false); setIsShowingScoreboard(false) }}
+              className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-white font-bold py-2 px-4 rounded"
+            >
+              Settings
+            </button>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-gray-900 dark:text-white text-xl">No slides available</div>
